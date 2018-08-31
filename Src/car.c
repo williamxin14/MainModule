@@ -49,10 +49,10 @@ void carInit() {
 	car.brake = 0;
 	car.phcan = &hcan1;
 	car.calibrate_flag = CALIBRATE_NONE;
-	car.throttle1_min = 0x0f70;
-	car.throttle1_max = 0x0860;
-	car.throttle2_min = 0x0eb0;
-	car.throttle2_max = 0x0750;
+	car.throttle1_min = 0x0f90;
+	car.throttle1_max = 0x07e0;
+	car.throttle2_min = 0x0ed0;
+	car.throttle2_max = 0x06c0;
 	car.brake1_min = 0x027c;
 	car.brake1_max = 0x0900;
 	car.brake2_min = 0x026f;
@@ -407,9 +407,16 @@ void taskCarMainRoutine() {
 			HAL_GPIO_WritePin(RFE_GPIO_Port,RFE_Pin,GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(FRG_RUN_GPIO_Port,FRG_RUN_Pin,GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(BATT_FAN_GPIO_Port,BATT_FAN_Pin,GPIO_PIN_RESET);
-			//xTaskCreate(taskSoundBuzzer, "buzzer is on", 64, (void *) 300, 1, NULL);
 			car.state = CAR_STATE_INIT;
 
+		}
+		else if (car.state == CAR_STATE_RECOVER)
+		{
+			HAL_GPIO_WritePin(RFE_GPIO_Port,RFE_Pin,GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(FRG_RUN_GPIO_Port,FRG_RUN_Pin,GPIO_PIN_RESET);
+			vTaskDelay((uint32_t) 500 / portTICK_RATE_MS);
+			enableMotorController();
+			car.state = CAR_STATE_READY2DRIVE;
 		}
 		// calculate
 //			calcTorqueLimit = (80000 / (actualDC * 10 * actualV * 10)); //(DCLimit / (actualDC * 10)) * actualTorque;

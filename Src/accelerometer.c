@@ -5,7 +5,7 @@
  *      Author: ben
  */
 #include "accelerometer.h"
-
+#include "car.h"
 
 //Initializes accelerometer to use 100hz frequency and enables XYZ AXES
 void Accelero_Init(Sensitivity_t Sens){
@@ -141,8 +141,8 @@ void taskSendAccelero() {
 		tx.DLC = 6;
 		tx.RTR = CAN_RTR_DATA;
 		tx.IDE = CAN_ID_STD;
-		//car.phcan->pTxMsg = &tx;
-		//HAL_CAN_Transmit_IT(car.phcan);
+		car.phcan->pTxMsg = &tx;
+		HAL_CAN_Transmit(car.phcan, 10);
 
 		vTaskDelay(50);
 	}

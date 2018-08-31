@@ -46,7 +46,6 @@ void taskPedalBoxMsgHandler() {
 			uint32_t current_time_ms = xTaskGetTickCount() / portTICK_PERIOD_MS;;
 			// update time stamp, indicates when a pedalbox message was last received
 			car.pb_msg_rx_time = current_time_ms;
-
 			//check if calibration values should be updated
 			if (car.calibrate_flag == CALIBRATE_THROTTLE_MIN) {
 				car.throttle1_min = pedalboxmsg.throttle1_raw;

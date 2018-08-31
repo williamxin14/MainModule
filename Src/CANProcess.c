@@ -234,9 +234,23 @@ void taskRXCANProcess()
 					ISR_StartButtonPressed();
 					break;
 				}
+				case	ID_DASHBOARD1:
+				{
+					if (car.state == CAR_STATE_READY2DRIVE)
+					{
+						car.state = CAR_STATE_RECOVER;
+					}
+					break;
+				}
+				case	ID_DASHBOARD2:
+				{
+					HAL_GPIO_TogglePin(PUMP_GPIO_Port, PUMP_Pin);
+					break;
+				}
 				case ID_BMS_PACK_CUR_VOL:
 					actualDC = rx.Data[1] | (rx.Data[1] << 8);
 					actualV = rx.Data[3] | (rx.Data[2]<< 8);
+					break;
 			}
 		}
 	}

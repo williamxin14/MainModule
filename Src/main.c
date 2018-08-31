@@ -118,7 +118,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   carInit();
   CANFilterConfig();
-	Accelero_Init(Sensitivity_2G);
+	Accelero_Init(Sensitivity_4G);
   initRTOSObjects();  //start tasks in here
 	HAL_CAN_Receive_IT(&hcan1, 0);
 	HAL_CAN_Receive_IT(&hcan1, 1);
