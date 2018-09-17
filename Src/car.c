@@ -243,9 +243,10 @@ void taskBlink(void* can)
 		}
 		if (xSemaphoreTake(car.m_CAN, 100) == pdTRUE)
 		{
-			hcan1.pTxMsg = &tx;
-			HAL_CAN_Transmit(&hcan1, 100);
-			xSemaphoreGive(car.m_CAN);  //release CAN mutex
+//			hcan1.pTxMsg = &tx;
+//			HAL_CAN_Transmit(&hcan1, 100);
+//			xSemaphoreGive(car.m_CAN);  //release CAN mutex
+			xQueueSendToBack(car.q_txcan, &tx, 100);
 
 		}
 		//		//req regid 40
@@ -332,12 +333,7 @@ void taskCarMainRoutine() {
 		tx.DLC = 4;
 		tx.IDE = CAN_ID_STD;
 		tx.RTR = CAN_RTR_DATA;
-		if (xSemaphoreTake(car.m_CAN, 100) == pdTRUE)
-		{
-			car.phcan->pTxMsg = &tx;
-			HAL_CAN_Transmit(car.phcan, 100);
-			xSemaphoreGive(car.m_CAN);  //release CAN mutex
-		}
+		xQueueSendToBack(car.q_txcan, &tx, 100);
 
 		//state dependent block
 		if (car.state == CAR_STATE_INIT)

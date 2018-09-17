@@ -87,7 +87,7 @@ void CANFilterConfig()
 {
 
 
-	  CAN_FilterConfTypeDef FilterConf;
+	  CAN_FilterTypeDef FilterConf;
 	  FilterConf.FilterIdHigh =         ID_PEDALBOX2 << 5; // 2 num
 	  FilterConf.FilterIdLow =          0x350 << 5; // 0
 	  FilterConf.FilterMaskIdHigh =     0x7ff;       // 3
@@ -97,7 +97,7 @@ void CANFilterConfig()
 //	  FilterConf.FilterMaskIdHigh = ID_PEDALBOX2 << 5; //3
 //	  FilterConf.FilterMaskIdLow = 	ID_DASHBOARD << 5;	//1
 	  FilterConf.FilterFIFOAssignment = CAN_FilterFIFO0;
-	  FilterConf.FilterNumber = 0;
+	  FilterConf.FilterBank = 0;
 	  FilterConf.FilterMode = CAN_FILTERMODE_IDLIST;
 	  FilterConf.FilterScale = CAN_FILTERSCALE_16BIT;
 	  FilterConf.FilterActivation = ENABLE;
@@ -142,8 +142,15 @@ void taskTXCAN()
 				//if (state != HAL_CAN_STATE_ERROR)
 				{
 					xQueueReceive(car.q_txcan, &tx, portMAX_DELAY);  //actually take item out of queue
-					car.phcan->pTxMsg = &tx;
-					HAL_CAN_Transmit(car.phcan, 1000);
+					//car.phcan->pTxMsg = &tx;
+					//HAL_CAN_Transmit(car.phcan, 1000);
+					CAN_TxHeaderTypeDef header;
+					header.DLC = tx.DLC;
+					header.IDE = tx.IDE;
+					header.RTR = tx.RTR;
+					header.StdId = tx.StdId;
+					header.TransmitGlobalTime = DISABLE;
+					HAL_CAN_AddTxMessage(car.phcan, &header, tx.Data, NULL);
 				}
 				xSemaphoreGive(car.m_CAN);  //release CAN mutex
 			}

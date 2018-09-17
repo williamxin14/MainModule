@@ -44,13 +44,8 @@ void mcCmdTorque(uint16_t torqueVal) {
 	tx.Data[0] = 	REGID_CMD_TORQUE;
 	tx.Data[1] =	(uint8_t) torqueVal;	//bytes 7-0
 	tx.Data[2] =	(uint8_t) (torqueVal >> 8);		//bytes 11-8
-	if (xSemaphoreTake(car.m_CAN, 100) == pdTRUE)
-	{
-		car.phcan->pTxMsg = &tx;
-		HAL_CAN_Transmit(car.phcan, 100);
-		xSemaphoreGive(car.m_CAN);  //release CAN mutex
-	}
-	//xQueueSendToBack(car.q_txcan, &tx, 100);
+
+	xQueueSendToBack(car.q_txcan, &tx, 100);
 }
 
 void mcCmdTorqueFake(uint16_t torqueVal) {
@@ -63,13 +58,8 @@ void mcCmdTorqueFake(uint16_t torqueVal) {
 	tx.Data[0] = 	REGID_CMD_TORQUE;
 	tx.Data[1] =	(uint8_t) torqueVal;	//bytes 7-0
 	tx.Data[2] =	(uint8_t) (torqueVal >> 8);		//bytes 11-8
-	if (xSemaphoreTake(car.m_CAN, 100) == pdTRUE)
-	{
-		car.phcan->pTxMsg = &tx;
-		HAL_CAN_Transmit(car.phcan, 100);
-		xSemaphoreGive(car.m_CAN);  //release CAN mutex
-	}
-	//xQueueSendToBack(car.q_txcan, &tx, 100);
+
+	xQueueSendToBack(car.q_txcan, &tx, 100);
 }
 
 
@@ -82,12 +72,8 @@ void mcCmdTransmissionRequestPermenant (uint8_t regid, uint8_t retransmitTimeMS)
 	tx.Data[0] = 	REGID_CMD_REQUEST_DATA;
 	tx.Data[1] =	regid;
 	tx.Data[2] =	(uint8_t) retransmitTimeMS;
-	if (xSemaphoreTake(car.m_CAN, 100) == pdTRUE)
-	{
-		car.phcan->pTxMsg = &tx;
-		HAL_CAN_Transmit(car.phcan, 100);
-		xSemaphoreGive(car.m_CAN);  //release CAN mutex
-	}
+	xQueueSendToBack(car.q_txcan, &tx, 100);
+
 }
 
 //use regid's defined in motor_controller.h
@@ -100,12 +86,9 @@ void mcCmdTransmissionRequestSingle(uint8_t regid) {
 	tx.Data[0] = 	REGID_CMD_REQUEST_DATA;
 	tx.Data[1] =	regid;
 	tx.Data[2] =	RETRANSMISSION_SINGLE;
-	if (xSemaphoreTake(car.m_CAN, 100) == pdTRUE)
-	{
-		car.phcan->pTxMsg = &tx;
-		HAL_CAN_Transmit(car.phcan, 100);
-		xSemaphoreGive(car.m_CAN);  //release CAN mutex
-	}}
+	xQueueSendToBack(car.q_txcan, &tx, 100);
+
+}
 
 void mcCmdTransmissionAbortPermenant(uint8_t regid) {
 	//example 10, BAMOCAR CAN MANUAL
@@ -116,12 +99,8 @@ void mcCmdTransmissionAbortPermenant(uint8_t regid) {
 	tx.Data[0] = 	REGID_CMD_REQUEST_DATA;
 	tx.Data[1] =	regid;
 	tx.Data[2] =	RETRANSMISSION_ABORT;
-	if (xSemaphoreTake(car.m_CAN, 100) == pdTRUE)
-	{
-		car.phcan->pTxMsg = &tx;
-		HAL_CAN_Transmit(car.phcan, 100);
-		xSemaphoreGive(car.m_CAN);  //release CAN mutex
-	}
+	xQueueSendToBack(car.q_txcan, &tx, 100);
+
 }
 
 void disableMotor()
@@ -192,16 +171,7 @@ void enableMotorController() {
 	tx.Data[0] = 	0xd0;
 	tx.Data[0] = 	0x4f;
 	tx.Data[1] =	0x01;
-	//xQueueSendToBack(car.q_txcan, &tx, 100);
-	if (xSemaphoreTake(car.m_CAN, 100) == pdTRUE)
-	{
-		car.phcan->pTxMsg = &tx;
-		HAL_CAN_Transmit(car.phcan, 100);
-		xSemaphoreGive(car.m_CAN);  //release CAN mutex
-	}
-
-
-
+	xQueueSendToBack(car.q_txcan, &tx, 100);
 }
 
 
