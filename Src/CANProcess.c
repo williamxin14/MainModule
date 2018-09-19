@@ -26,7 +26,7 @@
 *
 *     Function Information
 *
-*     Name of Function: RXCAN_ISR
+*     Name of Function: HAL_CAN_RxFifo0MsgPendingCallback
 *
 *     Programmer's Name: Ben Ng, xbenng@gmail.com
 *
@@ -35,15 +35,38 @@
 *     Parameters (list data type, name, and comment one per line):
 *
 *     Global Dependents:
-*	  1. QueueHandle_t	q_pedalbox_msg;
+*	  1. ;
 *
 *     Function Description:
-*			To be called by CAN1_RX0_IRQHandler in order to queue
-*			received CAN messages to be processed by RXCANProcessTask
+*			To be called by HAL_CAN_IRQHandler when a CAN message is received.
 *
 ***************************************************************************/
-void ISR_RXCAN()
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
+	HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
+
+	CanRxMsgTypeDef rx;
+	//hcan1.pRxMsg = &rx;
+	CAN_RxHeaderTypeDef header;
+	HAL_CAN_GetRxMessage(hcan, 0, &header, rx.Data);
+	rx.DLC = header.DLC;
+	rx.StdId = header.StdId;
+	xQueueSendFromISR(car.q_rxcan, &rx, NULL);
+
+}
+
+void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
+{
+	HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
+
+	CanRxMsgTypeDef rx;
+	//hcan1.pRxMsg = &rx;
+	CAN_RxHeaderTypeDef header;
+	HAL_CAN_GetRxMessage(hcan, 1, &header, rx.Data);
+	rx.DLC = header.DLC;
+	rx.StdId = header.StdId;
+	xQueueSendFromISR(car.q_rxcan, &rx, NULL);
+
 }
 
 
@@ -136,11 +159,11 @@ void taskTXCAN()
 		if (xQueuePeek(car.q_txcan, &tx, portMAX_DELAY) == pdTRUE)
 		{
 			//check if CAN mutex is available
-			if (xSemaphoreTake(car.m_CAN, 50) == pdTRUE)
+			//if (xSemaphoreTake(car.m_CAN, 50) == pdTRUE)
 			{
 				//HAL_CAN_StateTypeDef state = HAL_CAN_GetState(car.phcan);
 				//if (state != HAL_CAN_STATE_ERROR)
-				{
+				//{
 					xQueueReceive(car.q_txcan, &tx, portMAX_DELAY);  //actually take item out of queue
 					//car.phcan->pTxMsg = &tx;
 					//HAL_CAN_Transmit(car.phcan, 1000);
@@ -150,9 +173,11 @@ void taskTXCAN()
 					header.RTR = tx.RTR;
 					header.StdId = tx.StdId;
 					header.TransmitGlobalTime = DISABLE;
-					HAL_CAN_AddTxMessage(car.phcan, &header, tx.Data, NULL);
-				}
-				xSemaphoreGive(car.m_CAN);  //release CAN mutex
+					uint32_t mailbox;
+					HAL_CAN_AddTxMessage(car.phcan, &header, tx.Data, &mailbox);
+					while (!HAL_CAN_GetTxMailboxesFreeLevel(car.phcan)); // while mailboxes not free
+				//}
+				//xSemaphoreGive(car.m_CAN);  //release CAN mutex
 			}
 
 		}

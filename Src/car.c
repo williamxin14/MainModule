@@ -180,7 +180,7 @@ void initRTOSObjects() {
 	//todo optimize stack depths http://www.freertos.org/FAQMem.html#StackSize
 	xTaskCreate(taskPedalBoxMsgHandler, "PedalBoxMsgHandler", 256, NULL, 1, NULL);
 	xTaskCreate(taskCarMainRoutine, "CarMain", 256 , NULL, 1, NULL);
-	//xTaskCreate(taskTXCAN, "TX CAN", 256, NULL, 1, NULL);
+	xTaskCreate(taskTXCAN, "TX CAN", 256, NULL, 1, NULL);
 	xTaskCreate(taskRXCANProcess, "RX CAN", 256, NULL, 1, NULL);
 	xTaskCreate(taskBlink, "blink", 256, NULL, 1, NULL);
 	xTaskCreate(taskSendAccelero, "accelro", 256, NULL, 1, NULL);
@@ -251,7 +251,7 @@ void taskBlink(void* can)
 		}
 		//		//req regid 40
 		//mcCmdTransmissionRequestSingle(0x40);
-		HAL_CAN_Receive_IT(&hcan1, 0);
+		//HAL_CAN_Receive_IT(&hcan1, 0);
 		vTaskDelay(250 / portTICK_RATE_MS);
 	}
 }
