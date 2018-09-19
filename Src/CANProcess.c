@@ -102,8 +102,6 @@ void CANFilterConfig()
 	  FilterConf.FilterScale = CAN_FILTERSCALE_16BIT;
 	  FilterConf.FilterActivation = ENABLE;
 	  HAL_CAN_ConfigFilter(car.phcan, &FilterConf);
-
-
 }
 
 
