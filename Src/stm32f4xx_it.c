@@ -106,21 +106,11 @@ void CAN1_RX0_IRQHandler(void)
 void CAN1_RX1_IRQHandler(void)
 {
   /* USER CODE BEGIN CAN1_RX1_IRQn 0 */
-	CanRxMsgTypeDef rx;
-	//hcan1.pRxMsg = &rx;
-	CAN_RxHeaderTypeDef header;
-	HAL_CAN_GetRxMessage(&hcan1, 1, &header, rx.Data);
-	rx.DLC = header.DLC;
-	rx.StdId = header.StdId;
 
   /* USER CODE END CAN1_RX1_IRQn 0 */
   HAL_CAN_IRQHandler(&hcan1);
   /* USER CODE BEGIN CAN1_RX1_IRQn 1 */
-	if (xSemaphoreTakeFromISR(car.m_CAN, 1000) == pdTRUE)  //https://community.st.com/thread/36641-stm32f7-hal-can-receive-interrupt-only-once
-	{
-		xQueueSendFromISR(car.q_rxcan, &rx, NULL);
-		xSemaphoreGiveFromISR(car.m_CAN, NULL);  //release CAN mutex
-	}
+
   /* USER CODE END CAN1_RX1_IRQn 1 */
 }
 

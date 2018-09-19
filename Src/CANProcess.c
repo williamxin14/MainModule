@@ -46,7 +46,6 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 	HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
 
 	CanRxMsgTypeDef rx;
-	//hcan1.pRxMsg = &rx;
 	CAN_RxHeaderTypeDef header;
 	HAL_CAN_GetRxMessage(hcan, 0, &header, rx.Data);
 	rx.DLC = header.DLC;
@@ -60,7 +59,6 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 	HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
 
 	CanRxMsgTypeDef rx;
-	//hcan1.pRxMsg = &rx;
 	CAN_RxHeaderTypeDef header;
 	HAL_CAN_GetRxMessage(hcan, 1, &header, rx.Data);
 	rx.DLC = header.DLC;
@@ -89,36 +87,15 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 *     Function Description: Filter Configuration.
 *
 ***************************************************************************/
-//void CANFilterConfig()
-//{
-//	  CAN_FilterConfTypeDef filter_conf;  //filter config object
-//
-//	  //see filter configuration section of manifesto for filter numbering
-//	  //also refer to "CAN Messages" in team documentation for addresses
-//	  filter_conf.FilterIdHigh = 		0x7ff << 5; // 2
-//	  filter_conf.FilterIdLow = 		ID_PEDALBOX1 << 5; // 0, "pedalbox1" throttle values and pedalbox errors
-//	  filter_conf.FilterMaskIdHigh = 	0 << 5; //3
-//	  filter_conf.FilterMaskIdLow = 	0 << 5;	//1, pedal errors
-//	  filter_conf.FilterFIFOAssignment = CAN_FilterFIFO0;  //use interrupt RX0
-//	  filter_conf.FilterNumber = 0;
-//	  filter_conf.FilterMode = CAN_FILTERMODE_IDMASK;  //four different filters, no masks
-//	  filter_conf.FilterScale = CAN_FILTERSCALE_16BIT; //16 bit filters
-//	  filter_conf.FilterActivation = ENABLE;
-//	  HAL_CAN_ConfigFilter(car.phcan, &filter_conf); //add filter
-//}
 void CANFilterConfig()
 {
 
 
 	  CAN_FilterTypeDef FilterConf;
 	  FilterConf.FilterIdHigh =         ID_PEDALBOX2 << 5; // 2 num
-	  FilterConf.FilterIdLow =          0x350 << 5; // 0
+	  FilterConf.FilterIdLow =          ID_DASHBOARD << 5; // 0
 	  FilterConf.FilterMaskIdHigh =     0x7ff;       // 3
 	  FilterConf.FilterMaskIdLow =      0x7fe;       // 1
-//	  FilterConf.FilterIdHigh = 	0b0000000001000000; // 2
-//	  FilterConf.FilterIdLow = 		ID_PEDALBOXCALIBRATE << 5; // 0
-//	  FilterConf.FilterMaskIdHigh = ID_PEDALBOX2 << 5; //3
-//	  FilterConf.FilterMaskIdLow = 	ID_DASHBOARD << 5;	//1
 	  FilterConf.FilterFIFOAssignment = CAN_FilterFIFO0;
 	  FilterConf.FilterBank = 0;
 	  FilterConf.FilterMode = CAN_FILTERMODE_IDLIST;
@@ -172,29 +149,11 @@ void taskTXCAN()
 	}
 }
 
-//void taskRXCAN() /////////this should not be a thing.
-//{
-//	CanRxMsgTypeDef rx;
-//	car.phcan->pRxMsg = &rx;
-//	for (;;)
-//	{
-//
-//		//check if CAN mutex is available
-//		if (xSemaphoreTake(car.m_CAN, 10) == pdTRUE )
-//		{
-//			HAL_CAN_Receive_IT(car.phcan, 0);
-//			HAL_CAN_Receive_IT(car.phcan, 1);
-//			xSemaphoreGive(car.m_CAN);  //release CAN mutex
-//		}
-//		vTaskSuspend(NULL);
-//	}
-//}
-
 /***************************************************************************
 *
 *     Function Information
 *
-*     Name of Function: taskRXCAN
+*     Name of Function: taskRXCANprocess
 *
 *     Programmer's Name: Ben Ng, xbenng@gmail.com
 *
@@ -223,7 +182,6 @@ void taskRXCANProcess()
 		if (xQueueReceive(car.q_rxcan, &rx, portMAX_DELAY) == pdTRUE)
 		{
 			//A CAN message has been recieved
-			//HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
 			//check what kind of message we received
 			switch (rx.StdId)
 			{
@@ -239,7 +197,6 @@ void taskRXCANProcess()
 				case ID_BAMOCAR_STATION_RX: { //if bamocar message
 					//forward frame to mc frame queue
 					processBamoCar(&rx);
-					//xQueueSend(car.q_mc_frame, &rx, 100);
 				}
 				case  	ID_WHEEL_FR:
 				case	ID_WHEEL_FL:
@@ -331,12 +288,6 @@ void processPedalboxFrame(CanRxMsgTypeDef* rx)
 				rx->Data[PEDALBOX1_BRAKE2_7_0_BYTE]  >> PEDALBOX1_BRAKE2_7_0_OFFSET;  //brake 2 Value (7:0) [7:0]
 		uint8_t brake2_11_8	=
 				(rx->Data[PEDALBOX1_BRAKE2_11_8_BYTE] & PEDALBOX1_BRAKE2_11_8_MASK) >> PEDALBOX1_BRAKE2_11_8_OFFSET;  //brake 2 Value (11:8) [3:0]
-
-		//mask then shift the error flags //we nolonger calculate erros on PedalBox board. 10-23-2017
-//		pedalboxmsg.APPS_Implausible =
-//				(rx->Data[PEDALBOX1_IMP_BYTE] & PEDALBOX1_IMP_MASK) >> PEDALBOX1_IMP_OFFSET;
-//		pedalboxmsg.EOR =
-//				(rx->Data[PEDALBOX1_EOR_BYTE] & PEDALBOX1_EOR_MASK) >> PEDALBOX1_EOR_OFFSET;
 
 
 		//build the data
