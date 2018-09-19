@@ -158,28 +158,16 @@ void taskTXCAN()
 		//check if this task is triggered
 		if (xQueuePeek(car.q_txcan, &tx, portMAX_DELAY) == pdTRUE)
 		{
-			//check if CAN mutex is available
-			//if (xSemaphoreTake(car.m_CAN, 50) == pdTRUE)
-			{
-				//HAL_CAN_StateTypeDef state = HAL_CAN_GetState(car.phcan);
-				//if (state != HAL_CAN_STATE_ERROR)
-				//{
-					xQueueReceive(car.q_txcan, &tx, portMAX_DELAY);  //actually take item out of queue
-					//car.phcan->pTxMsg = &tx;
-					//HAL_CAN_Transmit(car.phcan, 1000);
-					CAN_TxHeaderTypeDef header;
-					header.DLC = tx.DLC;
-					header.IDE = tx.IDE;
-					header.RTR = tx.RTR;
-					header.StdId = tx.StdId;
-					header.TransmitGlobalTime = DISABLE;
-					uint32_t mailbox;
-					HAL_CAN_AddTxMessage(car.phcan, &header, tx.Data, &mailbox);
-					while (!HAL_CAN_GetTxMailboxesFreeLevel(car.phcan)); // while mailboxes not free
-				//}
-				//xSemaphoreGive(car.m_CAN);  //release CAN mutex
-			}
-
+			xQueueReceive(car.q_txcan, &tx, portMAX_DELAY);  //actually take item out of queue
+			CAN_TxHeaderTypeDef header;
+			header.DLC = tx.DLC;
+			header.IDE = tx.IDE;
+			header.RTR = tx.RTR;
+			header.StdId = tx.StdId;
+			header.TransmitGlobalTime = DISABLE;
+			uint32_t mailbox;
+			HAL_CAN_AddTxMessage(car.phcan, &header, tx.Data, &mailbox);
+			while (!HAL_CAN_GetTxMailboxesFreeLevel(car.phcan)); // while mailboxes not free
 		}
 	}
 }
