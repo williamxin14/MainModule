@@ -141,8 +141,9 @@ void taskSendAccelero() {
 		tx.DLC = 6;
 		tx.RTR = CAN_RTR_DATA;
 		tx.IDE = CAN_ID_STD;
-		car.phcan->pTxMsg = &tx;
-		HAL_CAN_Transmit(car.phcan, 10);
+//		car.phcan->pTxMsg = &tx;
+//		HAL_CAN_Transmit(car.phcan, 10);
+		xQueueSendToBack(car.q_txcan, &tx, 100);
 
 		vTaskDelay(50);
 	}

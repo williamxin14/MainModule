@@ -52,7 +52,7 @@
 //rtos parameter defines
 #define QUEUE_SIZE_RXCAN			16
 #define QUEUE_SIZE_PEDALBOXMSG		16
-#define QUEUE_SIZE_TXCAN			3
+#define QUEUE_SIZE_TXCAN			10
 #define QUEUE_SIZE_MCFRAME			3
 
 

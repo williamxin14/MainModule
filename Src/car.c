@@ -180,7 +180,7 @@ void initRTOSObjects() {
 	//todo optimize stack depths http://www.freertos.org/FAQMem.html#StackSize
 	xTaskCreate(taskPedalBoxMsgHandler, "PedalBoxMsgHandler", 256, NULL, 1, NULL);
 	xTaskCreate(taskCarMainRoutine, "CarMain", 256 , NULL, 1, NULL);
-	//xTaskCreate(taskTXCAN, "TX CAN", 256, NULL, 1, NULL);
+	xTaskCreate(taskTXCAN, "TX CAN", 256, NULL, 1, NULL);
 	xTaskCreate(taskRXCANProcess, "RX CAN", 256, NULL, 1, NULL);
 	xTaskCreate(taskBlink, "blink", 256, NULL, 1, NULL);
 	xTaskCreate(taskSendAccelero, "accelro", 256, NULL, 1, NULL);
@@ -243,14 +243,15 @@ void taskBlink(void* can)
 		}
 		if (xSemaphoreTake(car.m_CAN, 100) == pdTRUE)
 		{
-			hcan1.pTxMsg = &tx;
-			HAL_CAN_Transmit(&hcan1, 100);
-			xSemaphoreGive(car.m_CAN);  //release CAN mutex
+//			hcan1.pTxMsg = &tx;
+//			HAL_CAN_Transmit(&hcan1, 100);
+//			xSemaphoreGive(car.m_CAN);  //release CAN mutex
+			xQueueSendToBack(car.q_txcan, &tx, 100);
 
 		}
 		//		//req regid 40
 		//mcCmdTransmissionRequestSingle(0x40);
-		HAL_CAN_Receive_IT(&hcan1, 0);
+		//HAL_CAN_Receive_IT(&hcan1, 0);
 		vTaskDelay(250 / portTICK_RATE_MS);
 	}
 }
@@ -332,12 +333,7 @@ void taskCarMainRoutine() {
 		tx.DLC = 4;
 		tx.IDE = CAN_ID_STD;
 		tx.RTR = CAN_RTR_DATA;
-		if (xSemaphoreTake(car.m_CAN, 100) == pdTRUE)
-		{
-			car.phcan->pTxMsg = &tx;
-			HAL_CAN_Transmit(car.phcan, 100);
-			xSemaphoreGive(car.m_CAN);  //release CAN mutex
-		}
+		xQueueSendToBack(car.q_txcan, &tx, 100);
 
 		//state dependent block
 		if (car.state == CAR_STATE_INIT)
