@@ -120,21 +120,11 @@ int main(void)
   MX_CAN1_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
+
   carInit();
-  CANFilterConfig();
-	Accelero_Init(Sensitivity_4G);
+  Accelero_Init(Sensitivity_4G);
+  CANInit();
   initRTOSObjects();  //start tasks in here
-  HAL_CAN_Start(&hcan1);
-	//HAL_CAN_Receive_IT(&hcan1, 0);
-	//HAL_CAN_Receive_IT(&hcan1, 1);
-  HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);
-  HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO1_MSG_PENDING);
-
-//	HAL_GPIO_WritePin(SDC_CTRL_GPIO_Port,SDC_CTRL_Pin,SET);
-//	HAL_GPIO_WritePin(BATT_FAN_GPIO_Port,BATT_FAN_Pin,SET);
-//	HAL_GPIO_WritePin(PUMP_GPIO_Port,PUMP_Pin,SET);
-//	HAL_GPIO_WritePin(BUZZER_GPIO_Port,BUZZER_Pin,SET);
-
 
   /* USER CODE END 2 */
 

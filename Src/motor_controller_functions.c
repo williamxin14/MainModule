@@ -44,7 +44,6 @@ void mcCmdTorque(uint16_t torqueVal) {
 	tx.Data[0] = 	REGID_CMD_TORQUE;
 	tx.Data[1] =	(uint8_t) torqueVal;	//bytes 7-0
 	tx.Data[2] =	(uint8_t) (torqueVal >> 8);		//bytes 11-8
-
 	xQueueSendToBack(car.q_txcan, &tx, 100);
 }
 
@@ -58,7 +57,6 @@ void mcCmdTorqueFake(uint16_t torqueVal) {
 	tx.Data[0] = 	REGID_CMD_TORQUE;
 	tx.Data[1] =	(uint8_t) torqueVal;	//bytes 7-0
 	tx.Data[2] =	(uint8_t) (torqueVal >> 8);		//bytes 11-8
-
 	xQueueSendToBack(car.q_txcan, &tx, 100);
 }
 
@@ -73,7 +71,6 @@ void mcCmdTransmissionRequestPermenant (uint8_t regid, uint8_t retransmitTimeMS)
 	tx.Data[1] =	regid;
 	tx.Data[2] =	(uint8_t) retransmitTimeMS;
 	xQueueSendToBack(car.q_txcan, &tx, 100);
-
 }
 
 //use regid's defined in motor_controller.h
@@ -87,7 +84,6 @@ void mcCmdTransmissionRequestSingle(uint8_t regid) {
 	tx.Data[1] =	regid;
 	tx.Data[2] =	RETRANSMISSION_SINGLE;
 	xQueueSendToBack(car.q_txcan, &tx, 100);
-
 }
 
 void mcCmdTransmissionAbortPermenant(uint8_t regid) {
@@ -100,7 +96,6 @@ void mcCmdTransmissionAbortPermenant(uint8_t regid) {
 	tx.Data[1] =	regid;
 	tx.Data[2] =	RETRANSMISSION_ABORT;
 	xQueueSendToBack(car.q_txcan, &tx, 100);
-
 }
 
 void disableMotor()
@@ -131,7 +126,6 @@ void disableMotor()
 	//mcCmdTorque(0);
 	HAL_GPIO_WritePin(FRG_RUN_GPIO_Port, FRG_RUN_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(RFE_GPIO_Port, RFE_Pin, GPIO_PIN_RESET);
-
 }
 
 void enableMotorController() {

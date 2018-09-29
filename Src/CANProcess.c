@@ -87,9 +87,12 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 *     Function Description: Filter Configuration.
 *
 ***************************************************************************/
-void CANFilterConfig()
+void CANInit()
 {
 
+	  HAL_CAN_Start(&hcan1);
+	  HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);
+	  HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO1_MSG_PENDING);
 
 	  CAN_FilterTypeDef FilterConf;
 	  FilterConf.FilterIdHigh =         ID_PEDALBOX2 << 5; // 2 num

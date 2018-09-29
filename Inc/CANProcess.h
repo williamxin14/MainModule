@@ -130,16 +130,13 @@ typedef struct
 
 }CanRxMsgTypeDef;
 
-void ISR_RXCAN();
-void CANFilterConfig();
+void CANInit();
 void taskRXCANProcess();
 void taskTXCAN();
 void taskRXCAN();
 void processBamoCar(CanRxMsgTypeDef* rx);
 void processWheelModuleFrame(CanRxMsgTypeDef* rx);
 void processPedalboxFrame(CanRxMsgTypeDef* rx);
-
-
 void processCalibrate(CanRxMsgTypeDef* rx);
 
 #endif /* CANPROCESS_H_ */
