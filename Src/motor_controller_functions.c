@@ -34,8 +34,28 @@ int taskProcessMotorControllerFrame() {
 	return 0;
 }
 
-void mcCmdTorque(uint16_t torqueVal) {
+/***************************************************************************
+*
+*     Function Information
+*
+*     Name of Function: disableMotor
+*
+*     Programmer's Name: Ben Ng
+*
+*     Function Return Type: void
+*
+*     Parameters (list data type, name, and comment one per line):
+*       1.float torque_pct - value from 0 to 1 representing percent of motor controller torque to be commanded
+*		2.
+*
+*      Global Dependents:
+*
+*     Function Description:
+*			requests motorcontroller for a percentage of its torque
+***************************************************************************/
+void mcCmdTorque(float torque_pct) {
 	//example 5, BAMOCAR CAN MANUAL
+	uint16_t torqueVal = MC_MAX_THROTTLE * torque_pct;
 	CanTxMsgTypeDef tx;
 	tx.IDE = 		CAN_ID_STD;
 	tx.StdId = 		ID_BAMOCAR_STATION_TX;
@@ -48,8 +68,9 @@ void mcCmdTorque(uint16_t torqueVal) {
 	xQueueSendToBack(car.q_txcan, &tx, 100);
 }
 
-void mcCmdTorqueFake(uint16_t torqueVal) {
+void mcCmdTorqueFake(float torque_pct) {
 	//example 5, BAMOCAR CAN MANUAL
+	uint16_t torqueVal = MC_MAX_THROTTLE * torque_pct;
 	CanTxMsgTypeDef tx;
 	tx.IDE = 		CAN_ID_STD;
 	tx.StdId = 		0x490;

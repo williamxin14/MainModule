@@ -17,6 +17,7 @@
 
 #include "car.h"
 #include "accelerometer.h"
+#include "PedalBox.h"
 
 void carSetBrakeLight(Brake_light_status_t status)
 /***************************************************************************
@@ -42,39 +43,77 @@ void carSetBrakeLight(Brake_light_status_t status)
 }
 
 
+void carSoundBuzzer(uint32_t timeMS)
+/***************************************************************************
+*
+*     Function Information
+*
+*     Name of Function: setBrakeLight
+*
+*     Programmer's Name: Ben Ng xbenng@gmail.com
+*
+*     Function Return Type: void
+*
+*     Parameters (list data type, name, and comment one per line):
+*       1. uint32_t timeMS, time to sound buzzer
+*
+*      Global Dependents:
+*
+*     Function Description:
+*			asynchronously sounds buzzer for timeMS number of milliseconds
+*			immediately returns after starting task
+***************************************************************************/
+{
+	xTaskCreate(taskSoundBuzzer, "SoundBuzzer", 256, &timeMS, 10, NULL);
+	return;
+}
+
 void carInit() {
 	car.state = CAR_STATE_INIT;
 	car.pb_mode = PEDALBOX_MODE_DIGITAL;
-	car.throttle_acc = 0;
-	car.brake = 0;
+
 	car.phcan = &hcan1;
 	car.calibrate_flag = CALIBRATE_NONE;
-	car.throttle1_min = 0x0f90;
-	car.throttle1_max = 0x07e0;
-	car.throttle2_min = 0x0ed0;
-	car.throttle2_max = 0x06c0;
-	car.brake1_min = 0x027c;
-	car.brake1_max = 0x0900;
-	car.brake2_min = 0x026f;
-	car.brake2_max = 0x0900;
-	car.pb_msg_rx_time = 4294967295;
-	car.apps_state_bp_plaus = PEDALBOX_STATUS_NO_ERROR;
-	car.apps_state_eor = PEDALBOX_STATUS_NO_ERROR;
-	car.apps_state_imp = PEDALBOX_STATUS_NO_ERROR;
-	car.apps_state_timeout = PEDALBOX_STATUS_NO_ERROR;
 
+	apps_init();
 }
 
+/***************************************************************************
+*
+*     Function Information
+*
+*     Name of Function: ISR_StartButtonPressed
+*
+*     Programmer's Name: Ben Ng			xbenng@gmail.com
+*
+*     Function Return Type: void
+*
+*     Parameters (list data type, name, and comment one per line):
+*
+*      Global Dependents:
+*
+*     Function Description:
+*     		called when start button is pressed.
+*
+***************************************************************************/
 void ISR_StartButtonPressed() {
 	if (car.state == CAR_STATE_INIT)
 	{
-		if (car.brake >= BRAKE_PRESSED_THRESHOLD//check if brake is pressed before starting car
-			&& HAL_GPIO_ReadPin(P_AIR_STATUS_GPIO_Port, P_AIR_STATUS_Pin) == PC_COMPLETE //check if precharge has finished
+		if (
+			brake_isPressed() //check if brake is pressed before starting car
+			&& pc_isComplete() //check if precharge has finished
 		)
-		car.state = CAR_STATE_PREREADY2DRIVE;
+		{
+			car.state = CAR_STATE_PREREADY2DRIVE;  //put car into preready to drive state
+		}
 	} else {
 		car.state = CAR_STATE_RESET;
 	}
+}
+
+PC_status_t pc_isComplete()
+{
+	return HAL_GPIO_ReadPin(P_AIR_STATUS_GPIO_Port, P_AIR_STATUS_Pin) == PC_COMPLETE;
 }
 
 //TODO Potential MC ping function
@@ -170,7 +209,6 @@ void initRTOSObjects() {
 
 	car.q_rxcan = 			xQueueCreate(QUEUE_SIZE_RXCAN, sizeof(CanRxMsgTypeDef));
 	car.q_txcan = 			xQueueCreate(QUEUE_SIZE_TXCAN, sizeof(CanTxMsgTypeDef));
-	car.q_pedalboxmsg = 	xQueueCreate(QUEUE_SIZE_PEDALBOXMSG, sizeof(Pedalbox_msg_t));
 //	car.q_mc_frame = 		xQueueCreate(QUEUE_SIZE_MCFRAME, sizeof(CanRxMsgTypeDef));
 
 	car.m_CAN =				xSemaphoreCreateMutex(); //mutex to protect CAN peripheral
@@ -181,83 +219,36 @@ void initRTOSObjects() {
 	xTaskCreate(taskPedalBoxMsgHandler, "PedalBoxMsgHandler", 256, NULL, 1, NULL);
 	xTaskCreate(taskCarMainRoutine, "CarMain", 256 , NULL, 1, NULL);
 	xTaskCreate(taskTXCAN, "TX CAN", 256, NULL, 1, NULL);
-	xTaskCreate(taskRXCANProcess, "RX CAN", 256, NULL, 1, NULL);
 	xTaskCreate(taskBlink, "blink", 256, NULL, 1, NULL);
 	xTaskCreate(taskSendAccelero, "accelro", 256, NULL, 1, NULL);
 	//xTaskCreate(taskMotorControllerPoll, "Motor Poll", 256, NULL, 1, NULL);
  }
-//extern uint8_t variable;
+
 void taskBlink(void* can)
 {
-	//vTaskDelay(5000); //TESTING1
 	while (1)
 	{
-		//HAL_GPIO_TogglePin(FRG_RUN_CTRL_GPIO_Port, FRG_RUN_CTRL_Pin);
-		HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-		//HAL_GPIO_TogglePin(LD5_GPIO_Port, LD5_Pin);
+		HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);  //orange LED
 
 		CanTxMsgTypeDef tx;
-
 		tx.IDE = CAN_ID_STD;
 		tx.RTR = CAN_RTR_DATA;
 		tx.StdId = 0x200;
 		tx.DLC = 1;
 		tx.Data[0] = 0;
-		switch (car.state)
-		{
-		case CAR_STATE_INIT :
-			tx.Data[0] |= 0b00000000;
-			break;
-		case CAR_STATE_PREREADY2DRIVE:
-			tx.Data[0] |= 0b00000001;
-			break;
-		case CAR_STATE_READY2DRIVE :
-			tx.Data[0] |= 0b00000010;
-			break;
-		case CAR_STATE_RESET :
-			tx.Data[0] |= 0b00000011;
-			break;
-		case CAR_STATE_ERROR :
-			tx.Data[0] |=  0b00000100;
-			break;
-		}
-		if (car.apps_state_imp == PEDALBOX_STATUS_ERROR)
-		{
-			tx.Data[0] |= 0b00010000;
-		}
-		if (car.apps_state_bp_plaus == PEDALBOX_STATUS_ERROR)
-		{
-			tx.Data[0] |= 0b00100000;
-		}
-		if (car.apps_state_eor == PEDALBOX_STATUS_ERROR)
-		{
-			tx.Data[0] |= 0b01000000;
-		}
-		if (car.apps_state_timeout == PEDALBOX_STATUS_ERROR)
-		{
-			tx.Data[0] |= 0b10000000;
-		}
-		if(!HAL_GPIO_ReadPin(P_AIR_STATUS_GPIO_Port,P_AIR_STATUS_Pin))
-		{
-			tx.Data[0] |= 0b00001000;
-		}
-		if (xSemaphoreTake(car.m_CAN, 100) == pdTRUE)
-		{
-//			hcan1.pTxMsg = &tx;
-//			HAL_CAN_Transmit(&hcan1, 100);
-//			xSemaphoreGive(car.m_CAN);  //release CAN mutex
-			xQueueSendToBack(car.q_txcan, &tx, 100);
 
-		}
-		//		//req regid 40
+		xQueueSendToBack(car.q_txcan, &tx, 100);
+
+		//bamocar timeout message
+		//req regid 40
 		//mcCmdTransmissionRequestSingle(0x40);
-		//HAL_CAN_Receive_IT(&hcan1, 0);
+
 		vTaskDelay(250 / portTICK_RATE_MS);
 	}
 }
 
 
-void taskSoundBuzzer(int* time_ms) {
+void taskSoundBuzzer(uint32_t* time_ms) {
 /***************************************************************************
 *
 *     Function Information
@@ -280,7 +271,7 @@ void taskSoundBuzzer(int* time_ms) {
 	while (1) {
 		HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, GPIO_PIN_SET); //turn on buzzer
 		//enable FRG/RUN 0.5s after RFE.
-		vTaskDelay((uint32_t) time_ms / portTICK_RATE_MS);
+		vTaskDelay(*time_ms / portTICK_RATE_MS);
 		HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, GPIO_PIN_RESET); //turn off buzzer
 		vTaskDelete(NULL);
 	}
@@ -292,24 +283,13 @@ void taskSoundBuzzer(int* time_ms) {
 void taskCarMainRoutine() {
 	while (1)
 	{
-		//do this no matter what state.
-		//get current time in ms
-		uint32_t current_time_ms = xTaskGetTickCount() / portTICK_PERIOD_MS;
-		uint16_t torque_to_send = 0;
+		float torque_to_send = 0;
+		//always active block (do this no matter what state.)
 
-		//always active block
-		//Brake
 		//check if brake level is greater than the threshold level
-		if (car.brake >= BRAKE_PRESSED_THRESHOLD) {
+		if (brake_isPressed()) {
 			//brake is presssed
 			carSetBrakeLight(BRAKE_LIGHT_ON);  //turn on brake light
-
-
-			//EV 2.5, check if the throttle level is greater than 25% while brakes are on
-//				if (throttle_avg > APPS_BP_PLAUS_THRESHOLD) {
-//					//set apps-brake pedal plausibility error
-//					car.apps_bp_plaus = PEDALBOX_STATUS_ERROR;
-//				}
 		} else {
 			//brake is not pressed
 			carSetBrakeLight(BRAKE_LIGHT_OFF);  //turn off brake light
@@ -320,16 +300,14 @@ void taskCarMainRoutine() {
 			car.state = CAR_STATE_RESET;
 		}
 
-		mcCmdTorqueFake(car.throttle_acc);
-
-
+		mcCmdTorqueFake(apps_getThrottlePos());
 
 		CanTxMsgTypeDef tx;
 		tx.StdId = ID_PEDALBOX_ERRORS;
-		tx.Data[0] = car.apps_state_bp_plaus;
-		tx.Data[1] = car.apps_state_eor;
-		tx.Data[2] = car.apps_state_imp;
-		tx.Data[3] = car.apps_state_timeout;
+		tx.Data[0] = apps_getStatus_bp();
+		tx.Data[1] = apps_getStatus_eor();
+		tx.Data[2] = apps_getStatus_imp();
+		tx.Data[3] = apps_getStatus_timeout();
 		tx.DLC = 4;
 		tx.IDE = CAN_ID_STD;
 		tx.RTR = CAN_RTR_DATA;
@@ -340,7 +318,6 @@ void taskCarMainRoutine() {
 		{
 			disableMotor();
 			//HAL_GPIO_WritePin(PUMP_GPIO_Port, PUMP_Pin, GPIO_PIN_RESET); //turn on pump
-
 
 			//assert these pins always
 			HAL_GPIO_WritePin(SDC_CTRL_GPIO_Port, SDC_CTRL_Pin, GPIO_PIN_SET); //close SDC
@@ -357,10 +334,8 @@ void taskCarMainRoutine() {
 			//enable FRG/RUN 0.5s after RFE.
 			enableMotorController();
 			//turn on buzzer
-			HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, GPIO_PIN_SET); //turn on buzzer
-			//enable FRG/RUN 0.5s after RFE.
-			vTaskDelay((uint32_t) 2000 / portTICK_RATE_MS);
-			HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, GPIO_PIN_RESET); //turn off buzzer			car.state = CAR_STATE_READY2DRIVE;  //car is started
+			carSoundBuzzer(2500);
+			car.state = CAR_STATE_READY2DRIVE;  //car is started
 			HAL_GPIO_WritePin(BATT_FAN_GPIO_Port, BATT_FAN_Pin, GPIO_PIN_SET);
 			if (HAL_GPIO_ReadPin(P_AIR_STATUS_GPIO_Port, P_AIR_STATUS_Pin) == PC_COMPLETE)
 			{
@@ -369,28 +344,14 @@ void taskCarMainRoutine() {
 		}
 		else if (car.state == CAR_STATE_READY2DRIVE)
 		{
-			//assert these pins during r2d
-			//HAL_GPIO_WritePin(PUMP_GPIO_Port, PUMP_Pin, GPIO_PIN_SET);
-
-			//check if the age of the pedalbox message is greater than the timeout
-			if (current_time_ms - car.pb_msg_rx_time > PEDALBOX_TIMEOUT)
+			if (apps_getStatus_bp() == PEDALBOX_STATUS_NO_ERROR &&
+				apps_getStatus_eor() == PEDALBOX_STATUS_NO_ERROR &&
+				apps_getStatus_imp() == PEDALBOX_STATUS_NO_ERROR &&
+				apps_getStatus_timeout()== PEDALBOX_STATUS_NO_ERROR)
 			{
+				torque_to_send = apps_getThrottlePos();
+			} else {
 				torque_to_send = 0;
-				car.apps_state_timeout = PEDALBOX_STATUS_ERROR;
-				//todo send a CAN message to dash?
-			}
-			else
-			{
-				car.apps_state_timeout = PEDALBOX_STATUS_NO_ERROR;
-			}
-			if (car.apps_state_bp_plaus == PEDALBOX_STATUS_NO_ERROR &&
-				car.apps_state_eor == PEDALBOX_STATUS_NO_ERROR &&
-				car.apps_state_imp == PEDALBOX_STATUS_NO_ERROR &&
-				car.apps_state_timeout == PEDALBOX_STATUS_NO_ERROR)
-			{
-				torque_to_send = car.throttle_acc; //gets average
-			} else if (car.apps_state_bp_plaus == PEDALBOX_STATUS_ERROR) {
-
 			}
 		}
 		else if (car.state == CAR_STATE_ERROR)
@@ -422,7 +383,6 @@ void taskCarMainRoutine() {
 //			}
 
 		mcCmdTorque(torque_to_send);  //command the MC to move the motor
-
 
 		//wait until
 		vTaskDelay(PERIOD_TORQUE_SEND);

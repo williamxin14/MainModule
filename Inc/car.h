@@ -33,25 +33,18 @@
 //#define HEARTBEAT_PIN		GPIO_PIN_1
 
 
-#define BRAKE_PRESSED_THRESHOLD	.3
-#define APPS_BP_PLAUS_RESET_THRESHOLD .05  //EV 2.5
-#define APPS_BP_PLAUS_THRESHOLD .25  //EV 2.5
 
 #define PERIOD_ACCELRO				50 / portTICK_RATE_MS
 #define PERIOD_TORQUE_SEND		 	100 / portTICK_RATE_MS
 #define HEARTBEAT_PULSEWIDTH		200 / portTICK_RATE_MS
 #define HEARTBEAT_PERIOD			100 / portTICK_RATE_MS
-#define PEDALBOX_TIMEOUT			1000 / portTICK_RATE_MS
 #define POLL_DELAY					50 / portTICK_RATE_MS
-#define MAX_BRAKE_LEVEL 			0xFFF
-#define MAX_THROTTLE_LEVEL			0x7FFE
 #define LC_THRESHOLD				10			// todo lc threshold DUMMY VALUE
 #define LAUNCH_CONTROL_INTERVAL_MS	10
 
 
 //rtos parameter defines
 #define QUEUE_SIZE_RXCAN			16
-#define QUEUE_SIZE_PEDALBOXMSG		16
 #define QUEUE_SIZE_TXCAN			10
 #define QUEUE_SIZE_MCFRAME			3
 
@@ -122,23 +115,7 @@ typedef struct {
 	Car_state_t 			state;
 	uint8_t					errorFlags;
 	//calibration values
-	int32_t				throttle1_min; //this is a higher value than max
-	int32_t				throttle1_max; //this is a lower value than min
-	int32_t				throttle2_min;
-	int32_t				throttle2_max;
-	int32_t				brake1_min;
-	int32_t				brake1_max;
-	int32_t				brake2_min;
-	int32_t				brake2_max;
-	int64_t 				throttle_acc;				//sum of car's intended throttle messages from pedalbox since last cmd sent to MC
-	int16_t					throttle_cnt;				//number of throttle messages in accumulator
-	float 				brake;						//car's intended brake position
-	uint32_t				pb_msg_rx_time;				//indicates when a pedalbox message was last received
-	uint32_t				apps_imp_first_time_ms;		//indicates when the first imp error was received
-	Pedalbox_status_t		apps_state_imp;		//the last pedalbox message imp sate
-	Pedalbox_status_t		apps_state_bp_plaus;				//apps-brake plausibility status
-	Pedalbox_status_t		apps_state_eor;				//apps-brake plausibility status
-	Pedalbox_status_t		apps_state_timeout;				//apps-brake plausibility status
+
 	Pedalbox_mode_t			pb_mode;					//determines whether pb will be analog or CAN
 	Calibrate_flag_t		calibrate_flag;
 
@@ -169,12 +146,13 @@ void taskCarMainRoutine();
 int SendTorqueTask();
 int mainModuleWatchdogTask();
 int taskHeartbeat();
-void taskSoundBuzzer(int* time);
+void taskSoundBuzzer(uint32_t* time);
 void initRTOSObjects();
 void taskBlink(void* can);
 void stopCar();
 void taskSendAccelero();
 void taskMotorControllerPoll();
+PC_status_t pc_isComplete();
 
 
 #endif /* CAR_H_ */

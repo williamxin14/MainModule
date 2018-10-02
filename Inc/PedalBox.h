@@ -8,7 +8,17 @@
 #ifndef PEDALBOX_H_
 #define PEDALBOX_H_
 
-#include "stm32f4xx_hal.h"
+#include "stdint.h"
+
+#define QUEUE_SIZE_PEDALBOXMSG		16
+#define PEDALBOX_TIMEOUT			500 / portTICK_RATE_MS
+#define MAX_BRAKE_LEVEL 			0xFFF
+#define THROTTLE_DEADZONE_LOW			.1
+#define THROTTLE_DEADZONE_HIGH			.1
+#define BRAKE_PRESSED_THRESHOLD	.3
+#define APPS_BP_PLAUS_RESET_THRESHOLD .05  //EV 2.5
+#define APPS_BP_PLAUS_THRESHOLD .25  //EV 2.5
+
 
 typedef enum {
 	PEDALBOX_STATUS_ERROR = 1, //generic error
@@ -19,10 +29,13 @@ typedef enum {
 	PEDALBOX_STATUS_NO_ERROR = 0
 } Pedalbox_status_t;
 
+typedef enum {
+	BRAKE_STATUS_PRESSED,
+	BRAKE_STATUS_NOT_PRESSED
+} Brake_status_t;
+
 // Structure to hold data passed through the queue to pedalBoxMsgHandler
 typedef struct _pedalbox_msg {
-	//Pedalbox_status_t 		EOR; 				// EV 2.4.6: Encoder out of range
-	//Pedalbox_status_t 		APPS_Implausible; 	// EV 2.3.5
 	int 				throttle1_raw;		// raw throttle data from pedalbox
 	int 				throttle2_raw;
 	int  				brake1_raw;
@@ -30,10 +43,13 @@ typedef struct _pedalbox_msg {
 
 } Pedalbox_msg_t;
 
-typedef struct {
-	uint16_t				count;
-	uint16_t				period_ms;
-	Pedalbox_msg_t			msg;
-} GeneratePedalboxMessages_t;
+float apps_getThrottlePos();
+float apps_getBrake();
+void apps_init();
+Pedalbox_status_t apps_getStatus_imp();
+Pedalbox_status_t apps_getStatus_bp();
+Pedalbox_status_t apps_getStatus_eor();
+Pedalbox_status_t apps_getStatus_timeout();
+
 
 #endif /* PEDALBOX_H_ */
