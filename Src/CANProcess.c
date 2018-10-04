@@ -231,16 +231,6 @@ void taskRXCANProcess()
 	}
 }
 
-//void processWheelModuleFrame(CanRxMsgTypeDef* rx) {
-//	uint16_t speed = 0;
-//	speed |= (rx->Data[WM_SPEED_7_0_BYTE] & 0xFF);
-//	speed |= ((rx->Data[WM_SPEED_11_8_BYTE] << 8) & 	0x0F00);
-//	//todo process wheel module stuff
-//	if (rx->StdId == ID_WHEEL_FR) {
-//		wheelModule.speedFR = rx->Data[0];
-//	}
-//}
-
 /***************************************************************************
 *
 *     Function Information
@@ -262,50 +252,7 @@ void taskRXCANProcess()
 ***************************************************************************/
 void processPedalboxFrame(CanRxMsgTypeDef* rx)
 {
-	if (car.pb_mode == PEDALBOX_MODE_DIGITAL)	//
-	{
-		Pedalbox_msg_t pedalboxmsg;
-
-		///////////SCRUB DATA the from the CAN frame//////////////
-		//mask then shift the throttle value data
-		uint8_t throttle1_7_0 	=
-				rx->Data[PEDALBOX1_THROT1_7_0_BYTE]  >> PEDALBOX1_THROT1_7_0_OFFSET;  //Throttle 1 Value (7:0) [7:0]
-		uint8_t throttle1_11_8	=
-				(rx->Data[PEDALBOX1_THROT1_11_8_BYTE] & PEDALBOX1_THROT1_11_8_MASK) >> PEDALBOX1_THROT1_11_8_OFFSET;  //Throttle 1 Value (11:8) [3:0]
-		uint8_t throttle2_7_0	=
-				rx->Data[PEDALBOX1_THROT2_7_0_BYTE]  >> PEDALBOX1_THROT2_7_0_OFFSET;  //Throttle 2 Value (7:0) [7:0]
-		uint8_t throttle2_11_8	=
-				(rx->Data[PEDALBOX1_THROT2_11_8_BYTE] & PEDALBOX1_THROT2_11_8_MASK) >> PEDALBOX1_THROT2_11_8_OFFSET;  //Throttle 2 Value (11:8) [3:0]
-
-		//mask then shift the brake value data
-		uint8_t brake1_7_0 	=
-				rx->Data[PEDALBOX1_BRAKE1_7_0_BYTE]  >> PEDALBOX1_BRAKE1_7_0_OFFSET;  //brake 1 Value (7:0) [7:0]
-		uint8_t brake1_11_8	=
-				(rx->Data[PEDALBOX1_BRAKE1_11_8_BYTE] & PEDALBOX1_BRAKE1_11_8_MASK) >> PEDALBOX1_BRAKE1_11_8_OFFSET;  //brake 1 Value (11:8) [3:0]
-		uint8_t brake2_7_0	=
-				rx->Data[PEDALBOX1_BRAKE2_7_0_BYTE]  >> PEDALBOX1_BRAKE2_7_0_OFFSET;  //brake 2 Value (7:0) [7:0]
-		uint8_t brake2_11_8	=
-				(rx->Data[PEDALBOX1_BRAKE2_11_8_BYTE] & PEDALBOX1_BRAKE2_11_8_MASK) >> PEDALBOX1_BRAKE2_11_8_OFFSET;  //brake 2 Value (11:8) [3:0]
-
-
-		//build the data
-		pedalboxmsg.throttle1_raw = 0;
-		pedalboxmsg.throttle1_raw |= throttle1_7_0 << 0;
-		pedalboxmsg.throttle1_raw |= throttle1_11_8 << 8;
-		pedalboxmsg.throttle2_raw = 0;
-		pedalboxmsg.throttle2_raw |= throttle2_7_0 << 0;
-		pedalboxmsg.throttle2_raw |= throttle2_11_8 << 8;
-		pedalboxmsg.brake1_raw = 0;
-		pedalboxmsg.brake1_raw |= brake1_7_0 << 0;
-		pedalboxmsg.brake1_raw |= brake1_11_8 << 8;
-		pedalboxmsg.brake2_raw = 0;
-		pedalboxmsg.brake2_raw |= brake2_7_0 << 0;
-		pedalboxmsg.brake2_raw |= brake2_11_8 << 8;
-
-
-		//send to pedalboxmsg to queue
-		xQueueSendToBack(car.q_pedalboxmsg, &pedalboxmsg, 100);
-	}
+	xQueueSendToBack(q_pedalboxmsg, rx, 100);
 }
 
 void processCalibrate(CanRxMsgTypeDef* rx) {

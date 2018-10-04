@@ -6,27 +6,34 @@
  */
 
 #include "PedalBox.h"
+#include "CANProcess.h"
 #include "car.h"
 
 //TODO think about how to make these thread safe with a lock or possibly a request flag
-float 			throttle;				//sum of car's intended throttle messages from pedalbox since last cmd sent to MC
-int16_t				throttle_cnt;				//number of throttle messages in accumulator
-float 				brake;						//car's intended brake position
-Pedalbox_status_t		apps_status_imp;			//the last pedalbox message imp state
-Pedalbox_status_t		apps_status_bp_plaus;	//apps-brake plausibility status
-Pedalbox_status_t		apps_status_eor;			//apps-brake plausibility status
-Pedalbox_status_t		apps_status_timeout;		//apps-brake plausibility status
-uint32_t				pb_msg_rx_time;				//indicates when a pedalbox message was last received
-uint32_t				apps_imp_first_time_ms;		//indicates when the first imp error was received
-int32_t				throttle1_min; 				//this is a higher value than max
-int32_t				throttle1_max; 				//this is a lower value than min
-int32_t				throttle2_min;
-int32_t				throttle2_max;
-int32_t				brake1_min;
-int32_t				brake1_max;
-int32_t				brake2_min;
-int32_t				brake2_max;
+static float 					throttle;					//sum of car's intended throttle messages from pedalbox since last cmd sent to MC
+static float 					brake;						//car's intended brake position
+static Pedalbox_status_t		apps_status_imp;			//the last pedalbox message imp state
+static Pedalbox_status_t		apps_status_bp_plaus;		//apps-brake plausibility status
+static Pedalbox_status_t		apps_status_eor;			//apps-brake plausibility status
+static Pedalbox_status_t		apps_status_timeout;		//apps-brake plausibility status
+static uint32_t					pb_msg_rx_time;				//indicates when a pedalbox message was last received
+static uint32_t					apps_imp_first_time_ms;		//indicates when the first imp error was received
+static int32_t					throttle1_min; 				//this is a higher value than max
+static int32_t					throttle1_max; 				//this is a lower value than min
+static int32_t					throttle2_min;
+static int32_t					throttle2_max;
+static int32_t					brake1_min;
+static int32_t					brake1_max;
+static int32_t					brake2_min;
+static int32_t					brake2_max;
+
+static void taskPedalBoxMsgHandler();
+
+
+//public variables
 QueueHandle_t	 	q_pedalboxmsg;
+
+
 
 
 float apps_getThrottlePos()
@@ -73,7 +80,6 @@ void apps_init()
 	brake1_max = 0x0900;
 	brake2_min = 0x026f;
 	brake2_max = 0x0900;
-
 	throttle = 0;
 	brake = 0;
 	pb_msg_rx_time = 4294967295;
@@ -81,12 +87,11 @@ void apps_init()
 	apps_status_eor = PEDALBOX_STATUS_ERROR;
 	apps_status_imp = PEDALBOX_STATUS_ERROR;
 	apps_status_timeout = PEDALBOX_STATUS_ERROR;
-
-	q_pedalboxmsg = xQueueCreate(QUEUE_SIZE_PEDALBOXMSG, sizeof(Pedalbox_msg_t));
-	xTaskCreate(taskRXCANProcess, "RX CAN", 256, NULL, 1, NULL);
+	xTaskCreate(taskPedalBoxMsgHandler, "PedalBoxMsgHandler", 256, NULL, 1, NULL);
+	q_pedalboxmsg = xQueueCreate(QUEUE_SIZE_PEDALBOXMSG, sizeof(CanRxMsgTypeDef));
 }
 
-void taskPedalBoxMsgHandler() {
+static void taskPedalBoxMsgHandler() {
 /***************************************************************************
 *
 *     Function Information
@@ -114,15 +119,50 @@ void taskPedalBoxMsgHandler() {
 *			and not disrupt the logic behind processing the data.
 ***************************************************************************/
 
-	Pedalbox_msg_t pedalboxmsg;		//struct to store pedalbox msg
 	while (1) {
-
-		if(xQueueReceive(q_pedalboxmsg, &pedalboxmsg, PEDALBOX_TIMEOUT))
+		CanRxMsgTypeDef rx;  //CanRxMsgTypeDef to be received on the queue
+		Pedalbox_msg_t pedalboxmsg;
+		if (xQueueReceive(q_pedalboxmsg, &rx, PEDALBOX_TIMEOUT) == pdTRUE)
 		{
-			//now relying on queue timeout, previously: update time stamp, indicates when a pedalbox message was last received
-			//get current time in ms
-			uint32_t current_time_ms = xTaskGetTickCount() / portTICK_PERIOD_MS;;
-			//pb_msg_rx_time = current_time_ms;
+			TickType_t current_time_ms = xTaskGetTickCount();
+
+			///////////SCRUB DATA the from the CAN frame//////////////
+			//mask then shift the throttle value data
+			uint8_t throttle1_7_0 	=
+					rx.Data[PEDALBOX1_THROT1_7_0_BYTE]  >> PEDALBOX1_THROT1_7_0_OFFSET;  //Throttle 1 Value (7:0) [7:0]
+			uint8_t throttle1_11_8	=
+					(rx.Data[PEDALBOX1_THROT1_11_8_BYTE] & PEDALBOX1_THROT1_11_8_MASK) >> PEDALBOX1_THROT1_11_8_OFFSET;  //Throttle 1 Value (11:8) [3:0]
+			uint8_t throttle2_7_0	=
+					rx.Data[PEDALBOX1_THROT2_7_0_BYTE]  >> PEDALBOX1_THROT2_7_0_OFFSET;  //Throttle 2 Value (7:0) [7:0]
+			uint8_t throttle2_11_8	=
+					(rx.Data[PEDALBOX1_THROT2_11_8_BYTE] & PEDALBOX1_THROT2_11_8_MASK) >> PEDALBOX1_THROT2_11_8_OFFSET;  //Throttle 2 Value (11:8) [3:0]
+
+			//mask then shift the brake value data
+			uint8_t brake1_7_0 	=
+					rx.Data[PEDALBOX1_BRAKE1_7_0_BYTE]  >> PEDALBOX1_BRAKE1_7_0_OFFSET;  //brake 1 Value (7:0) [7:0]
+			uint8_t brake1_11_8	=
+					(rx.Data[PEDALBOX1_BRAKE1_11_8_BYTE] & PEDALBOX1_BRAKE1_11_8_MASK) >> PEDALBOX1_BRAKE1_11_8_OFFSET;  //brake 1 Value (11:8) [3:0]
+			uint8_t brake2_7_0	=
+					rx.Data[PEDALBOX1_BRAKE2_7_0_BYTE]  >> PEDALBOX1_BRAKE2_7_0_OFFSET;  //brake 2 Value (7:0) [7:0]
+			uint8_t brake2_11_8	=
+					(rx.Data[PEDALBOX1_BRAKE2_11_8_BYTE] & PEDALBOX1_BRAKE2_11_8_MASK) >> PEDALBOX1_BRAKE2_11_8_OFFSET;  //brake 2 Value (11:8) [3:0]
+
+
+			//build the data
+			pedalboxmsg.throttle1_raw = 0;
+			pedalboxmsg.throttle1_raw |= throttle1_7_0 << 0;
+			pedalboxmsg.throttle1_raw |= throttle1_11_8 << 8;
+			pedalboxmsg.throttle2_raw = 0;
+			pedalboxmsg.throttle2_raw |= throttle2_7_0 << 0;
+			pedalboxmsg.throttle2_raw |= throttle2_11_8 << 8;
+			pedalboxmsg.brake1_raw = 0;
+			pedalboxmsg.brake1_raw |= brake1_7_0 << 0;
+			pedalboxmsg.brake1_raw |= brake1_11_8 << 8;
+			pedalboxmsg.brake2_raw = 0;
+			pedalboxmsg.brake2_raw |= brake2_7_0 << 0;
+			pedalboxmsg.brake2_raw |= brake2_11_8 << 8;
+
+			/////////////PROCESS DATA///////////////
 
 			//calibration should not be done here.
 			//check if calibration values should be updated
@@ -147,9 +187,9 @@ void taskPedalBoxMsgHandler() {
 //
 //			}
 
-			/////////////PROCESS DATA///////////////
-			int throttle1_sign = (throttle1_max - throttle1_min) / fabs(throttle1_max - throttle1_min);
-			int throttle2_sign = (throttle2_max - throttle2_min) / fabs(throttle2_max - throttle2_min);
+			//check this math
+			//int throttle1_sign = (throttle1_max - throttle1_min) / fabs(throttle1_max - throttle1_min);
+			//int throttle2_sign = (throttle2_max - throttle2_min) / fabs(throttle2_max - throttle2_min);
 
 			float			throttle1_cal = ((float)(pedalboxmsg.throttle1_raw - throttle1_min)) / (throttle1_max - throttle1_min);  //value 0-1, throttle 1 calibrated between min and max
 			float			throttle2_cal = ((float)(pedalboxmsg.throttle2_raw - throttle2_min)) / (throttle2_max - throttle2_min);;  //value 0-1, throttle 2 calibrated between min and max
@@ -205,7 +245,7 @@ void taskPedalBoxMsgHandler() {
 
 
 //			BRAKE PLAUSIBILITY check
-			if (throttle_avg >= .25 && brake_avg >= BRAKE_PRESSED_THRESHOLD)
+			if (throttle_avg >= APPS_BP_PLAUS_THRESHOLD && brake_avg >= BRAKE_PRESSED_THRESHOLD)
 			{
 				apps_status_bp_plaus = PEDALBOX_STATUS_ERROR;
 			}
@@ -265,15 +305,8 @@ Pedalbox_status_t apps_getStatus_timeout()
 	return apps_status_timeout;
 }
 
-Brake_light_status_t brake_isPressed()
+Brake_pressed_status_t brake_isPressed()
 {
 	return apps_getBrake() >= BRAKE_PRESSED_THRESHOLD;
 }
-
-//int storeToFlash() {
-//	HAL_FLASH_Unlock();
-//	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_PGSERR );
-//)
-//};
-
 

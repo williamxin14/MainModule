@@ -21,7 +21,10 @@
 #include "motor_controller_functions.h"
 #include "CANProcess.h"
 
-int taskProcessMotorControllerFrame() {
+static void taskMotorControllerPoll(void* param);
+static int taskProcessMotorControllerFrame();
+
+static int taskProcessMotorControllerFrame() {
 	CanRxMsgTypeDef rx;
 
 	while (1) {
@@ -124,12 +127,12 @@ void mcCmdTransmissionAbortPermenant(uint8_t regid) {
 
 }
 
-void disableMotor()
+void mc_disableMotor()
 /***************************************************************************
 *
 *     Function Information
 *
-*     Name of Function: disableMotor
+*     Name of Function: mc_disableMotor
 *
 *     Programmer's Name: Ben Ng
 *
@@ -149,18 +152,17 @@ void disableMotor()
 *			sends 0 torque, then disables RUN, and REF
 ***************************************************************************/
 {
-	//mcCmdTorque(0);
+	mcCmdTorque(0);
 	HAL_GPIO_WritePin(FRG_RUN_GPIO_Port, FRG_RUN_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(RFE_GPIO_Port, RFE_Pin, GPIO_PIN_RESET);
-
 }
 
-void enableMotorController() {
+void mc_enableMotor() {
 /***************************************************************************
 *
 *     Function Information
 *
-*     Name of Function: initMotorController
+*     Name of Function: mc_enableMotor
 *
 *     Programmer's Name: Ben Ng
 *
@@ -177,13 +179,14 @@ void enableMotorController() {
 *
 ***************************************************************************/
 
+	//bamocar 5.2
+	//Contacts of the safety device closed,
+	//enable FRG/RUN 0.5s after RFE.
 	HAL_GPIO_WritePin(RFE_GPIO_Port, RFE_Pin, GPIO_PIN_SET);
-
-	vTaskDelay(500 / portTICK_RATE_MS);  //wait 500ms, see BAMOCAR manual
-	//request 10, BAMOCAR CAN MANUAL
-
+	vTaskDelay(500 / portTICK_RATE_MS);  //wait 500ms
 	HAL_GPIO_WritePin(FRG_RUN_GPIO_Port, FRG_RUN_Pin, GPIO_PIN_SET);
 
+	//request 10, BAMOCAR CAN MANUAL
 	//Enable Motor Controller CAN Timeout
 	CanTxMsgTypeDef tx;
 	tx.IDE = 		CAN_ID_STD;
@@ -196,7 +199,7 @@ void enableMotorController() {
 }
 
 
-void taskMotorControllerPoll(void* param)
+static void taskMotorControllerPoll(void* param)
 /***************************************************************************
 *
 *     Function Information

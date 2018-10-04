@@ -12,13 +12,8 @@
 #include "cmsis_os.h"
 #include "car.h"
 
-//function prototypes
-int taskProcessMotorControllerFrame();
-void mcCmdTransmissionRequestPermenant (uint8_t regid, uint8_t retransmitTimeMS);
-void mcCmdTransmissionRequestSingle(uint8_t regid);
-void mcCmdTransmissionAbortPermenant(uint8_t regid);
-void mcCmdTorque(float);
-void mcCmdTorqueFake(float);
+
+
 
 //DATA Defines
 #define MC_MAX_THROTTLE				0x7FFE
@@ -191,14 +186,25 @@ void mcCmdTorqueFake(float);
 #define RETRANSMISSION_SINGLE		0x00;
 #define RETRANSMISSION_ABORT		0xFF;  //example 10, BAMOCAR CAN MANUAL
 
-//function parameters
+//private function prototypes
+void mcCmdTransmissionRequestPermenant (uint8_t regid, uint8_t retransmitTimeMS);
+void mcCmdTransmissionRequestSingle(uint8_t regid);
+void mcCmdTransmissionAbortPermenant(uint8_t regid);
 
+//public functions
+extern void mcCmdTorque(float);
+extern void mcCmdTorqueFake(float);
+extern void mc_enableMotor();
+extern void mc_disableMotor();
 
 /*mc notes
  * N = speed = rpm
+ *
  *
  * little endian, {[7:0], [15:8], ...}
  *
  * page 105 command modes
  */
+
+
 #endif /* MOTOR_CONTROLLER_FUNCTIONS_H_ */
