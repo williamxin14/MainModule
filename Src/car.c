@@ -69,7 +69,7 @@ void ISR_StartButtonPressed() {
 	if (car.state == CAR_STATE_INIT)
 	{
 		if (car.brake >= BRAKE_PRESSED_THRESHOLD//check if brake is pressed before starting car
-			&& HAL_GPIO_ReadPin(P_AIR_STATUS_GPIO_Port, P_AIR_STATUS_Pin) == PC_COMPLETE //check if precharge has finished
+			&& HAL_GPIO_ReadPin(P_AIR_STATUS_GPIO_Port, P_AIR_STATUS_Pin) == (GPIO_PinState) PC_COMPLETE //check if precharge has finished
 		)
 		car.state = CAR_STATE_PREREADY2DRIVE;
 	} else {
@@ -220,6 +220,9 @@ void taskBlink(void* can)
 		case CAR_STATE_ERROR :
 			tx.Data[0] |=  0b00000100;
 			break;
+		case CAR_STATE_RECOVER :
+			tx.Data[0] |=  0b00000101;
+			break;
 		}
 		if (car.apps_state_imp == PEDALBOX_STATUS_ERROR)
 		{
@@ -362,7 +365,7 @@ void taskCarMainRoutine() {
 			vTaskDelay((uint32_t) 2000 / portTICK_RATE_MS);
 			HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, GPIO_PIN_RESET); //turn off buzzer			car.state = CAR_STATE_READY2DRIVE;  //car is started
 			HAL_GPIO_WritePin(BATT_FAN_GPIO_Port, BATT_FAN_Pin, GPIO_PIN_SET);
-			if (HAL_GPIO_ReadPin(P_AIR_STATUS_GPIO_Port, P_AIR_STATUS_Pin) == PC_COMPLETE)
+			if (HAL_GPIO_ReadPin(P_AIR_STATUS_GPIO_Port, P_AIR_STATUS_Pin) == (GPIO_PinState) PC_COMPLETE)
 			{
 				car.state = CAR_STATE_READY2DRIVE;  //car is started
 			}
