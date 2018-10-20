@@ -169,7 +169,7 @@ void enableMotorController() {
 	tx.StdId = 		ID_BAMOCAR_STATION_TX;
 	tx.DLC = 		3;
 	tx.Data[0] = 	0xd0;
-	tx.Data[0] = 	0x4f;
+	//tx.Data[0] = 	0x4f;
 	tx.Data[1] =	0x01;
 	xQueueSendToBack(car.q_txcan, &tx, 100);
 }
@@ -198,31 +198,6 @@ void taskMotorControllerPoll(void* param)
 *
 ***************************************************************************/
 {
-	/*
-	int numStates = 2;
-	int state = 0;
-	for (;;)
-	{
-		if (state > numStates)
-		{
-			state = 0;
-		}
-		switch (state)
-		{
-		// the motor controller frames to request
-			case 0:
-				mcCmdTransmissionRequestSingle(REGID_SPEED_ACTUAL_FILTER);
-			case 1:
-				mcCmdTransmissionRequestSingle(REGID_SPEED_ACTUAL_FILTER);
-		}
-		state++;
-		if (50/state > 20)
-		{
-			vTaskDelay(50/state);
-		} else {
-			vTaskDelay(20);
-		}
-	}*/
 	while(1)
 		{
 			//0x03B
@@ -237,20 +212,6 @@ void taskMotorControllerPoll(void* param)
 			//byte0 - Pack DCL - 2 bytes - MSB First - Big Endian - 1A
 			//byte1 - IN USE - 1bytes - MSB First
 			// Request Parameters
-//
-//				BCparam = 0;			// BCparam 0 - Nothing received
-//				while(BCparam != 1) {
-//					mcCmdTransmissionRequestSingle(REGID_I_ACT);
-//					vTaskDelay(POLL_DELAY);
-//				}	// BCparam 1 - actualTorque received
-//				while(BCparam != 2) {
-//					mcCmdTransmissionRequestSingle(ID_BMS_PACK_CUR_VOL);
-//					vTaskDelay(POLL_DELAY);
-//				}	// BCparam 2 - actualDC received
-//				while(BCparam != 3) {
-//					mcCmdTransmissionRequestSingle(ID_BMS_DCL);
-//					vTaskDelay(POLL_DELAY);
-//				}	// BCparam 3 - DCLimit received
 			BCparam = 0;            // BCparam 0 - Nothing received
 			while(BCparam != 1) {
 				mcCmdTransmissionRequestSingle(REGID_I_ACT);
