@@ -56,13 +56,11 @@
 #include "BMS.h"
 #include "PedalBox.h"
 #include "CANProcess.h"
-#include "accelerometer.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
 CAN_HandleTypeDef hcan1;
-
-SPI_HandleTypeDef hspi1;
+CAN_HandleTypeDef hcan2;
 
 osThreadId defaultTaskHandle;
 
@@ -76,7 +74,7 @@ BMS_t BMS;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_CAN1_Init(void);
-static void MX_SPI1_Init(void);
+static void MX_CAN2_Init(void);
 void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
@@ -118,23 +116,17 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_CAN1_Init();
-  MX_SPI1_Init();
+  MX_CAN2_Init();
   /* USER CODE BEGIN 2 */
   carInit();
-  CANFilterConfig();
-	Accelero_Init(Sensitivity_4G);
+  CAN1FilterConfig();
+  CAN2FilterConfig();
   initRTOSObjects();  //start tasks in here
   HAL_CAN_Start(&hcan1);
-	//HAL_CAN_Receive_IT(&hcan1, 0);
-	//HAL_CAN_Receive_IT(&hcan1, 1);
+  HAL_CAN_Start(&hcan2);
+
   HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);
   HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO1_MSG_PENDING);
-
-//	HAL_GPIO_WritePin(SDC_CTRL_GPIO_Port,SDC_CTRL_Pin,SET);
-//	HAL_GPIO_WritePin(BATT_FAN_GPIO_Port,BATT_FAN_Pin,SET);
-//	HAL_GPIO_WritePin(PUMP_GPIO_Port,PUMP_Pin,SET);
-//	HAL_GPIO_WritePin(BUZZER_GPIO_Port,BUZZER_Pin,SET);
-
 
   /* USER CODE END 2 */
 
@@ -263,24 +255,23 @@ static void MX_CAN1_Init(void)
 
 }
 
-/* SPI1 init function */
-static void MX_SPI1_Init(void)
+/* CAN2 init function */
+static void MX_CAN2_Init(void)
 {
 
-  /* SPI1 parameter configuration*/
-  hspi1.Instance = SPI1;
-  hspi1.Init.Mode = SPI_MODE_MASTER;
-  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
-  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
-  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
-  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  hspi1.Init.CRCPolynomial = 10;
-  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  hcan2.Instance = CAN2;
+  hcan2.Init.Prescaler = 4;
+  hcan2.Init.Mode = CAN_MODE_NORMAL;
+  hcan2.Init.SyncJumpWidth = CAN_SJW_1TQ;
+  hcan2.Init.TimeSeg1 = CAN_BS1_9TQ;
+  hcan2.Init.TimeSeg2 = CAN_BS2_6TQ;
+  hcan2.Init.TimeTriggeredMode = DISABLE;
+  hcan2.Init.AutoBusOff = ENABLE;
+  hcan2.Init.AutoWakeUp = DISABLE;
+  hcan2.Init.AutoRetransmission = DISABLE;
+  hcan2.Init.ReceiveFifoLocked = DISABLE;
+  hcan2.Init.TransmitFifoPriority = DISABLE;
+  if (HAL_CAN_Init(&hcan2) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
@@ -446,7 +437,13 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE END 4 */
 
-/* StartDefaultTask function */
+/* USER CODE BEGIN Header_StartDefaultTask */
+/**
+  * @brief  Function implementing the defaultTask thread.
+  * @param  argument: Not used 
+  * @retval None
+  */
+/* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void const * argument)
 {
 

@@ -16,7 +16,6 @@
 ***************************************************************************/
 
 #include "car.h"
-#include "accelerometer.h"
 
 void carSetBrakeLight(Brake_light_status_t status)
 /***************************************************************************
@@ -47,7 +46,8 @@ void carInit() {
 	car.pb_mode = PEDALBOX_MODE_DIGITAL;
 	car.throttle_acc = 0;
 	car.brake = 0;
-	car.phcan = &hcan1;
+	car.phcan1 = &hcan1;
+	car.phcan2 = &hcan2;
 	car.calibrate_flag = CALIBRATE_NONE;
 	car.throttle1_min = 0x0f90;
 	car.throttle1_max = 0x07e0;
@@ -69,7 +69,7 @@ void ISR_StartButtonPressed() {
 	if (car.state == CAR_STATE_INIT)
 	{
 		if (car.brake >= BRAKE_PRESSED_THRESHOLD//check if brake is pressed before starting car
-			&& HAL_GPIO_ReadPin(P_AIR_STATUS_GPIO_Port, P_AIR_STATUS_Pin) == PC_COMPLETE //check if precharge has finished
+			&& HAL_GPIO_ReadPin(P_AIR_STATUS_GPIO_Port, P_AIR_STATUS_Pin) == (GPIO_PinState) PC_COMPLETE //check if precharge has finished
 		)
 		car.state = CAR_STATE_PREREADY2DRIVE;
 	} else {
@@ -168,23 +168,23 @@ void initRTOSObjects() {
 
 	/* Create Queues */
 
-	car.q_rxcan = 			xQueueCreate(QUEUE_SIZE_RXCAN, sizeof(CanRxMsgTypeDef));
-	car.q_txcan = 			xQueueCreate(QUEUE_SIZE_TXCAN, sizeof(CanTxMsgTypeDef));
+	car.q_rxcan_1 = 			xQueueCreate(QUEUE_SIZE_RXCAN_1, sizeof(CanRxMsgTypeDef));
+	car.q_txcan_1 = 			xQueueCreate(QUEUE_SIZE_TXCAN_1, sizeof(CanTxMsgTypeDef));
+	car.q_rxcan_2 = 			xQueueCreate(QUEUE_SIZE_RXCAN_1, sizeof(CanRxMsgTypeDef));
+	car.q_txcan_2 = 			xQueueCreate(QUEUE_SIZE_TXCAN_1, sizeof(CanTxMsgTypeDef));
 	car.q_pedalboxmsg = 	xQueueCreate(QUEUE_SIZE_PEDALBOXMSG, sizeof(Pedalbox_msg_t));
 //	car.q_mc_frame = 		xQueueCreate(QUEUE_SIZE_MCFRAME, sizeof(CanRxMsgTypeDef));
-
-	car.m_CAN =				xSemaphoreCreateMutex(); //mutex to protect CAN peripheral
 
 	/* Create Tasks */
 
 	//todo optimize stack depths http://www.freertos.org/FAQMem.html#StackSize
 	xTaskCreate(taskPedalBoxMsgHandler, "PedalBoxMsgHandler", 256, NULL, 1, NULL);
 	xTaskCreate(taskCarMainRoutine, "CarMain", 256 , NULL, 1, NULL);
-	xTaskCreate(taskTXCAN, "TX CAN", 256, NULL, 1, NULL);
+	xTaskCreate(taskTXCAN_1, "TX CAN 1", 256, NULL, 1, NULL);
+	xTaskCreate(taskTXCAN_2, "TX CAN 2", 256, NULL, 1, NULL);
 	xTaskCreate(taskRXCANProcess, "RX CAN", 256, NULL, 1, NULL);
 	xTaskCreate(taskBlink, "blink", 256, NULL, 1, NULL);
-	xTaskCreate(taskSendAccelero, "accelro", 256, NULL, 1, NULL);
-	//xTaskCreate(taskMotorControllerPoll, "Motor Poll", 256, NULL, 1, NULL);
+	xTaskCreate(taskMotorControllerPoll, "Motor Poll", 256, NULL, 1, NULL);
  }
 //extern uint8_t variable;
 void taskBlink(void* can)
@@ -220,6 +220,8 @@ void taskBlink(void* can)
 		case CAR_STATE_ERROR :
 			tx.Data[0] |=  0b00000100;
 			break;
+		case CAR_STATE_RECOVER :
+			tx.Data[0] |= 0b00000101;
 		}
 		if (car.apps_state_imp == PEDALBOX_STATUS_ERROR)
 		{
@@ -241,14 +243,9 @@ void taskBlink(void* can)
 		{
 			tx.Data[0] |= 0b00001000;
 		}
-		if (xSemaphoreTake(car.m_CAN, 100) == pdTRUE)
-		{
-//			hcan1.pTxMsg = &tx;
-//			HAL_CAN_Transmit(&hcan1, 100);
-//			xSemaphoreGive(car.m_CAN);  //release CAN mutex
-			xQueueSendToBack(car.q_txcan, &tx, 100);
 
-		}
+		xQueueSendToBack(car.q_txcan_1, &tx, 100);
+
 		//		//req regid 40
 		//mcCmdTransmissionRequestSingle(0x40);
 		//HAL_CAN_Receive_IT(&hcan1, 0);
@@ -333,7 +330,7 @@ void taskCarMainRoutine() {
 		tx.DLC = 4;
 		tx.IDE = CAN_ID_STD;
 		tx.RTR = CAN_RTR_DATA;
-		xQueueSendToBack(car.q_txcan, &tx, 100);
+		xQueueSendToBack(car.q_txcan_1, &tx, 100);
 
 		//state dependent block
 		if (car.state == CAR_STATE_INIT)
@@ -362,7 +359,7 @@ void taskCarMainRoutine() {
 			vTaskDelay((uint32_t) 2000 / portTICK_RATE_MS);
 			HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, GPIO_PIN_RESET); //turn off buzzer			car.state = CAR_STATE_READY2DRIVE;  //car is started
 			HAL_GPIO_WritePin(BATT_FAN_GPIO_Port, BATT_FAN_Pin, GPIO_PIN_SET);
-			if (HAL_GPIO_ReadPin(P_AIR_STATUS_GPIO_Port, P_AIR_STATUS_Pin) == PC_COMPLETE)
+			if (HAL_GPIO_ReadPin(P_AIR_STATUS_GPIO_Port, P_AIR_STATUS_Pin) == (GPIO_PinState) PC_COMPLETE)
 			{
 				car.state = CAR_STATE_READY2DRIVE;  //car is started
 			}

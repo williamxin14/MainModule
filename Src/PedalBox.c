@@ -68,8 +68,8 @@ void taskPedalBoxMsgHandler() {
 			}
 
 			/////////////PROCESS DATA///////////////
-			int throttle1_sign = (car.throttle1_max - car.throttle1_min) / fabs(car.throttle1_max - car.throttle1_min);
-			int throttle2_sign = (car.throttle2_max - car.throttle2_min) / fabs(car.throttle2_max - car.throttle2_min);
+			//int throttle1_sign = (car.throttle1_max - car.throttle1_min) / fabs(car.throttle1_max - car.throttle1_min);
+			//int throttle2_sign = (car.throttle2_max - car.throttle2_min) / fabs(car.throttle2_max - car.throttle2_min);
 			//int throttle1_sign = -1;
 			//int throttle2_sign = -1;
 
