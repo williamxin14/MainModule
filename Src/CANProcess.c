@@ -50,8 +50,12 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 	HAL_CAN_GetRxMessage(hcan, 0, &header, rx.Data);
 	rx.DLC = header.DLC;
 	rx.StdId = header.StdId;
-	//todo check if stdid is MC or not to determine what queue to add it too
-	xQueueSendFromISR(car.q_rxcan_1, &rx, NULL);
+	if (header.StdId != ID_BAMOCAR_STATION_RX) {
+		xQueueSendFromISR(car.q_rxcan_1, &rx, NULL);
+	}
+	else {
+		xQueueSendFromISR(car.q_rxcan_2, &rx, NULL);
+	}
 
 }
 
@@ -64,9 +68,12 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 	HAL_CAN_GetRxMessage(hcan, 1, &header, rx.Data);
 	rx.DLC = header.DLC;
 	rx.StdId = header.StdId;
-	//todo check if stdid is MC or not to determine what queue to add it too
-	xQueueSendFromISR(car.q_rxcan_1, &rx, NULL);
-
+	if (header.StdId != ID_BAMOCAR_STATION_RX) {
+		xQueueSendFromISR(car.q_rxcan_1, &rx, NULL);
+	}
+	else {
+		xQueueSendFromISR(car.q_rxcan_2, &rx, NULL);
+	}
 }
 
 
