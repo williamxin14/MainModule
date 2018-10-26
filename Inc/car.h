@@ -131,7 +131,7 @@ typedef struct {
 	int32_t				brake1_max;
 	int32_t				brake2_min;
 	int32_t				brake2_max;
-	int64_t 				throttle_acc;				//sum of car's intended throttle messages from pedalbox since last cmd sent to MC
+	int32_t 				throttle_acc;				//sum of car's intended throttle messages from pedalbox since last cmd sent to MC
 	int16_t					throttle_cnt;				//number of throttle messages in accumulator
 	float 				brake;						//car's intended brake position
 	uint32_t				pb_msg_rx_time;				//indicates when a pedalbox message was last received
