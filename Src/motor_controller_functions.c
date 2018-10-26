@@ -169,7 +169,7 @@ void enableMotorController() {
 	tx.StdId = 		ID_BAMOCAR_STATION_TX;
 	tx.DLC = 		3;
 	tx.Data[0] = 	0xd0;
-	tx.Data[0] = 	0x4f;
+	//tx.Data[0] = 	0x4f;
 	tx.Data[1] =	0x01;
 	xQueueSendToBack(car.q_txcan, &tx, 100);
 }
@@ -198,31 +198,6 @@ void taskMotorControllerPoll(void* param)
 *
 ***************************************************************************/
 {
-	/*
-	int numStates = 2;
-	int state = 0;
-	for (;;)
-	{
-		if (state > numStates)
-		{
-			state = 0;
-		}
-		switch (state)
-		{
-		// the motor controller frames to request
-			case 0:
-				mcCmdTransmissionRequestSingle(REGID_SPEED_ACTUAL_FILTER);
-			case 1:
-				mcCmdTransmissionRequestSingle(REGID_SPEED_ACTUAL_FILTER);
-		}
-		state++;
-		if (50/state > 20)
-		{
-			vTaskDelay(50/state);
-		} else {
-			vTaskDelay(20);
-		}
-	}*/
 	while(1)
 		{
 			//0x03B
@@ -237,61 +212,47 @@ void taskMotorControllerPoll(void* param)
 			//byte0 - Pack DCL - 2 bytes - MSB First - Big Endian - 1A
 			//byte1 - IN USE - 1bytes - MSB First
 			// Request Parameters
-//
-//				BCparam = 0;			// BCparam 0 - Nothing received
-//				while(BCparam != 1) {
-//					mcCmdTransmissionRequestSingle(REGID_I_ACT);
-//					vTaskDelay(POLL_DELAY);
-//				}	// BCparam 1 - actualTorque received
-//				while(BCparam != 2) {
-//					mcCmdTransmissionRequestSingle(ID_BMS_PACK_CUR_VOL);
-//					vTaskDelay(POLL_DELAY);
-//				}	// BCparam 2 - actualDC received
-//				while(BCparam != 3) {
-//					mcCmdTransmissionRequestSingle(ID_BMS_DCL);
-//					vTaskDelay(POLL_DELAY);
-//				}	// BCparam 3 - DCLimit received
-		BCparam = 0;            // BCparam 0 - Nothing received
-		            while(BCparam != 1) {
-		                mcCmdTransmissionRequestSingle(REGID_I_ACT);
-		                vTaskDelay(POLL_DELAY);
-		            }    // BCparam 1 - actualTorque received
-		            while(BCparam != 2) {
-		                mcCmdTransmissionRequestSingle(REGID_SPEED_ACTUAL);
-		                vTaskDelay(POLL_DELAY);
-		            }    // BCparam 2 - speed actual received
-		            while(BCparam != 3) {
-		                mcCmdTransmissionRequestSingle(REGID_I_IST);
-		                vTaskDelay(POLL_DELAY);
-		            }    // BCparam 3 - current actual received
-		            while(BCparam != 4) {
-		                mcCmdTransmissionRequestSingle(REGID_I_SOLL);
-		                vTaskDelay(POLL_DELAY);
-		            }    // BCparam 4 - command current received
-		            while(BCparam != 5) {
-		                mcCmdTransmissionRequestSingle(REGID_DC_BUS);
-		                vTaskDelay(POLL_DELAY);
-		            }    // BCparam 5 - current actual received
-		            while(BCparam != 6) {
-		                mcCmdTransmissionRequestSingle(REGID_T_MOTOR);
-		                vTaskDelay(POLL_DELAY);
-		            }    // BCparam 6 - motor temperature received
-		            while(BCparam != 7) {
-		                mcCmdTransmissionRequestSingle(REGID_T_IGBT);
-		                vTaskDelay(POLL_DELAY);
-		            }    // BCparam 7 - power stage temperature received
-		            while(BCparam != 8) {
-		                mcCmdTransmissionRequestSingle(REGID_T_AIR);
-		                vTaskDelay(POLL_DELAY);
-		            }    // BCparam 8 - air temperature received
-		            while(BCparam != 9) {
-		                mcCmdTransmissionRequestSingle(REGID_I_REDA);
-		                vTaskDelay(POLL_DELAY);
-		            }    // BCparam 9 - actual current limit received
-		            while(BCparam != 10) {
-		                mcCmdTransmissionRequestSingle(REGID_ERR_BITMAP1);
-		                vTaskDelay(POLL_DELAY);
-		            }    // BCparam 10 - errBitMap1 received
+			BCparam = 0;            // BCparam 0 - Nothing received
+			while(BCparam != 1) {
+				mcCmdTransmissionRequestSingle(REGID_I_ACT);
+				vTaskDelay(POLL_DELAY);
+			}    // BCparam 1 - actualTorque received
+			while(BCparam != 2) {
+				mcCmdTransmissionRequestSingle(REGID_SPEED_ACTUAL);
+				vTaskDelay(POLL_DELAY);
+			}    // BCparam 2 - speed actual received
+			while(BCparam != 3) {
+				mcCmdTransmissionRequestSingle(REGID_I_IST);
+				vTaskDelay(POLL_DELAY);
+			}    // BCparam 3 - current actual received
+			while(BCparam != 4) {
+				mcCmdTransmissionRequestSingle(REGID_I_SOLL);
+				vTaskDelay(POLL_DELAY);
+			}    // BCparam 4 - command current received
+			while(BCparam != 5) {
+				mcCmdTransmissionRequestSingle(REGID_DC_BUS);
+				vTaskDelay(POLL_DELAY);
+			}    // BCparam 5 - current actual received
+			while(BCparam != 6) {
+				mcCmdTransmissionRequestSingle(REGID_T_MOTOR);
+				vTaskDelay(POLL_DELAY);
+			}    // BCparam 6 - motor temperature received
+			while(BCparam != 7) {
+				mcCmdTransmissionRequestSingle(REGID_T_IGBT);
+				vTaskDelay(POLL_DELAY);
+			}    // BCparam 7 - power stage temperature received
+			while(BCparam != 8) {
+				mcCmdTransmissionRequestSingle(REGID_T_AIR);
+				vTaskDelay(POLL_DELAY);
+			}    // BCparam 8 - air temperature received
+			while(BCparam != 9) {
+				mcCmdTransmissionRequestSingle(REGID_I_REDA);
+				vTaskDelay(POLL_DELAY);
+			}    // BCparam 9 - actual current limit received
+			while(BCparam != 10) {
+				mcCmdTransmissionRequestSingle(REGID_ERR_BITMAP1);
+				vTaskDelay(POLL_DELAY);
+			}    // BCparam 10 - errBitMap1 received
 
 		}
 }

@@ -89,8 +89,6 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 ***************************************************************************/
 void CANFilterConfig()
 {
-
-
 	  CAN_FilterTypeDef FilterConf;
 	  FilterConf.FilterIdHigh =         ID_PEDALBOX2 << 5; // 2 num
 	  FilterConf.FilterIdLow =          ID_DASHBOARD << 5; // 0
@@ -141,8 +139,8 @@ void taskTXCAN()
 			header.StdId = tx.StdId;
 			header.TransmitGlobalTime = DISABLE;
 			uint32_t mailbox;
-			HAL_CAN_AddTxMessage(car.phcan, &header, tx.Data, &mailbox);
 			while (!HAL_CAN_GetTxMailboxesFreeLevel(car.phcan)); // while mailboxes not free
+			HAL_CAN_AddTxMessage(car.phcan, &header, tx.Data, &mailbox);
 		}
 	}
 }
