@@ -122,8 +122,9 @@ void mcCmdTorque(uint16_t torqueVal) {
 	tx.Data[0] = 	REGID_CMD_TORQUE;
 	tx.Data[1] =	(uint8_t) torqueVal;	//bytes 7-0
 	tx.Data[2] =	(uint8_t) (torqueVal >> 8);		//bytes 11-8
+	HAL_GPIO_TogglePin(LD5_GPIO_Port, LD5_Pin);
 
-	xQueueSendToBack(car.q_txcan_2, &tx, 100);
+	xQueueSendToFront(car.q_txcan_2, &tx, 100); //higher priority than polling
 }
 
 void mcCmdTorqueFake(uint16_t torqueVal) {
@@ -290,6 +291,7 @@ void taskMotorControllerPoll(void* param)
 			//byte1 - IN USE - 1bytes - MSB First
 			// Request Parameters
 			BCparam = 0;            // BCparam 0 - Nothing received
+			HAL_GPIO_TogglePin(LD6_GPIO_Port, LD6_Pin);
 			while(BCparam != 1) {
 				mcCmdTransmissionRequestSingle(REGID_I_ACT);
 				vTaskDelay(POLL_DELAY);
