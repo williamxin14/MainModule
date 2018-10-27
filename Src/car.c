@@ -170,8 +170,8 @@ void initRTOSObjects() {
 
 	car.q_rxcan_1 = 			xQueueCreate(QUEUE_SIZE_RXCAN_1, sizeof(CanRxMsgTypeDef));
 	car.q_txcan_1 = 			xQueueCreate(QUEUE_SIZE_TXCAN_1, sizeof(CanTxMsgTypeDef));
-	car.q_rxcan_2 = 			xQueueCreate(QUEUE_SIZE_RXCAN_1, sizeof(CanRxMsgTypeDef));
-	car.q_txcan_2 = 			xQueueCreate(QUEUE_SIZE_TXCAN_1, sizeof(CanTxMsgTypeDef));
+	car.q_rxcan_2 = 			xQueueCreate(QUEUE_SIZE_RXCAN_2, sizeof(CanRxMsgTypeDef));
+	car.q_txcan_2 = 			xQueueCreate(QUEUE_SIZE_TXCAN_2, sizeof(CanTxMsgTypeDef));
 	car.q_pedalboxmsg = 	xQueueCreate(QUEUE_SIZE_PEDALBOXMSG, sizeof(Pedalbox_msg_t));
 	car.q_mc_frame = 		xQueueCreate(QUEUE_SIZE_MCFRAME, sizeof(CanRxMsgTypeDef));
 
@@ -184,7 +184,7 @@ void initRTOSObjects() {
 	xTaskCreate(taskTXCAN_2, "TX CAN 2", 256, NULL, 1, NULL);
 	xTaskCreate(taskRXCANProcess, "RX CAN", 256, NULL, 1, NULL);
 	xTaskCreate(taskBlink, "blink", 256, NULL, 1, NULL);
-	xTaskCreate(taskMotorControllerPoll, "Motor Poll", 256, NULL, 1, NULL);
+	//xTaskCreate(taskMotorControllerPoll, "Motor Poll", 256, NULL, 1, NULL);
  }
 //extern uint8_t variable;
 void taskBlink(void* can)
@@ -293,7 +293,7 @@ void taskCarMainRoutine() {
 		//get current time in ms
 		uint32_t current_time_ms = xTaskGetTickCount() / portTICK_PERIOD_MS;
 		uint16_t torque_to_send = 0;
-
+		HAL_GPIO_TogglePin(LD6_GPIO_Port, LD6_Pin);
 		//always active block
 		//Brake
 		//check if brake level is greater than the threshold level

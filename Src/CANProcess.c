@@ -43,37 +43,24 @@
 ***************************************************************************/
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
-	HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
+	//HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
 
 	CanRxMsgTypeDef rx;
 	CAN_RxHeaderTypeDef header;
 	HAL_CAN_GetRxMessage(hcan, 0, &header, rx.Data);
 	rx.DLC = header.DLC;
 	rx.StdId = header.StdId;
-	if (header.StdId != ID_BAMOCAR_STATION_RX) {
-		xQueueSendFromISR(car.q_rxcan_1, &rx, NULL);
-	}
-	else {
-		xQueueSendFromISR(car.q_rxcan_2, &rx, NULL);
-	}
-
+	xQueueSendFromISR(car.q_rxcan_1, &rx, NULL);
 }
 
 void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
-	HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
-
 	CanRxMsgTypeDef rx;
 	CAN_RxHeaderTypeDef header;
 	HAL_CAN_GetRxMessage(hcan, 1, &header, rx.Data);
 	rx.DLC = header.DLC;
 	rx.StdId = header.StdId;
-	if (header.StdId != ID_BAMOCAR_STATION_RX) {
-		xQueueSendFromISR(car.q_rxcan_1, &rx, NULL);
-	}
-	else {
-		xQueueSendFromISR(car.q_rxcan_2, &rx, NULL);
-	}
+	xQueueSendFromISR(car.q_rxcan_2, &rx, NULL);
 }
 
 
@@ -262,7 +249,7 @@ void taskRXCANProcess()
 	CanRxMsgTypeDef rx;  //CanRxMsgTypeDef to be received on the queue
 	while (1)
 	{
-
+		HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
 		//if there is a CanRxMsgTypeDef in the queue, pop it, and store in rx
 		if (xQueueReceive(car.q_rxcan_1, &rx, portMAX_DELAY) == pdTRUE)
 		{
@@ -313,13 +300,13 @@ void taskRXCANProcess()
 		}
 
 		//check the CAN2 to see if motor controller has responded
-		if (xQueueReceive(car.q_rxcan_2, &rx, portMAX_DELAY) == pdTRUE) {
+		/*if (xQueueReceive(car.q_rxcan_2, &rx, portMAX_DELAY) == pdTRUE) {
 			if ( ID_BAMOCAR_STATION_RX == rx.StdId ) { //if bamocar message
 				//forward frame to mc frame queue
 				xQueueSendToBack(car.q_mc_frame, &rx, 100);
 				break;
 			}
-		}
+		}*/
 	}
 }
 
