@@ -69,8 +69,7 @@ void ISR_StartButtonPressed() {
 	if (car.state == CAR_STATE_INIT)
 	{
 		if (car.brake >= BRAKE_PRESSED_THRESHOLD//check if brake is pressed before starting car
-			&& HAL_GPIO_ReadPin(P_AIR_STATUS_GPIO_Port, P_AIR_STATUS_Pin) == (GPIO_PinState) PC_COMPLETE //check if precharge has finished
-		)
+			&& HAL_GPIO_ReadPin(P_AIR_STATUS_GPIO_Port, P_AIR_STATUS_Pin) == (GPIO_PinState) PC_COMPLETE) //check if precharge has finished
 		car.state = CAR_STATE_PREREADY2DRIVE;
 	} else {
 		car.state = CAR_STATE_RESET;
@@ -194,7 +193,6 @@ void taskBlink(void* can)
 	{
 		//HAL_GPIO_TogglePin(FRG_RUN_CTRL_GPIO_Port, FRG_RUN_CTRL_Pin);
 		HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-		//HAL_GPIO_TogglePin(LD5_GPIO_Port, LD5_Pin);
 
 		CanTxMsgTypeDef tx;
 
@@ -241,6 +239,7 @@ void taskBlink(void* can)
 		}
 		if(!HAL_GPIO_ReadPin(P_AIR_STATUS_GPIO_Port,P_AIR_STATUS_Pin))
 		{
+			HAL_GPIO_TogglePin(LD5_GPIO_Port, LD5_Pin);
 			tx.Data[0] |= 0b00001000;
 		}
 
@@ -316,8 +315,6 @@ void taskCarMainRoutine() {
 		{
 			car.state = CAR_STATE_RESET;
 		}
-
-		mcCmdTorqueFake(car.throttle_acc);
 
 
 
@@ -418,6 +415,7 @@ void taskCarMainRoutine() {
 //				torque_to_send = calcTorqueLimit * torque_to_send;
 //			}
 
+		//mcCmdTorqueFake(car.throttle_acc);
 		mcCmdTorque(torque_to_send);  //command the MC to move the motor
 
 

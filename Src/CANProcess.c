@@ -85,8 +85,6 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 ***************************************************************************/
 void CAN1FilterConfig()
 {
-
-
 	  CAN_FilterTypeDef FilterConf;
 	  FilterConf.FilterIdHigh =         ID_PEDALBOX2 << 5; // 2 num
 	  FilterConf.FilterIdLow =          ID_DASHBOARD << 5; // 0
